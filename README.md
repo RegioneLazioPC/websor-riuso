@@ -30,6 +30,11 @@ git branch
 
 git pull origin
 
+#Decomprimere i file più voluminosi
+gzip -d addresses.csv.gz console/data/locations_shape/comuni_geom.dmp.gz console/data/locations_shape/geom_toponimi.sql.gz console/data/routing/routing_other.sql.gz
+
+
+
 /path/to/php-bin/php init
 composer install
 ```
