@@ -4,10 +4,15 @@ Rilasciato secondo licenza GNU Affero General Public License (License.md)
 
 L'installazione comprende lavori originali o derivati di terze parti tra cui:
 ISTAT - Basi Territoriali - http://www.istat.it - Licenza Creative Commons - Attribuzione - 3.0
+
 IGM Toponimi - http://www.pcn.minambiente.it - Licenza Creative Commons Attribuzione - 3.0
+
 OpenAddresses - http://openaddresses.io - Licenza nel file OPENADDRESSES-IO-LICENSE.md
+
 OpenStreetMap - https://www.openstreetmap.org - Open Data Commons Open Database License (ODbL) 
+
 YII Framework - https://www.yiiframework.com/ - BSD License
+
 
 
 Istruzioni per l'installazione
