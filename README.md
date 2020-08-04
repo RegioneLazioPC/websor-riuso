@@ -1,6 +1,10 @@
 Websor - Sistema di gestione di Sala Operativa di Protezione Civile
+
 Copyright (C) 2018-2020 - Regione Lazio - Agenzia Regionale di Protezione Civile
+
 Rilasciato secondo licenza GNU Affero General Public License (License.md)
+
+
 
 L'installazione comprende lavori originali o derivati di terze parti tra cui:
 
