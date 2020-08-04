@@ -3,6 +3,7 @@ Copyright (C) 2018-2020 - Regione Lazio - Agenzia Regionale di Protezione Civile
 Rilasciato secondo licenza GNU Affero General Public License (License.md)
 
 L'installazione comprende lavori originali o derivati di terze parti tra cui:
+
 ISTAT - Basi Territoriali - http://www.istat.it - Licenza Creative Commons - Attribuzione - 3.0
 
 IGM Toponimi - http://www.pcn.minambiente.it - Licenza Creative Commons Attribuzione - 3.0
