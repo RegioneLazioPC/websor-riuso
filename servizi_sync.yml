@@ -1,0 +1,52 @@
+swagger: "2.0"
+info:
+  description: "Documentazione servizi esposti per sincronizzazione modulo sync"
+  version: "1.0.0"
+  title: "Protezione civile servizi sincronizzazione"
+  termsOfService: "http://host/terms/"
+  contact:
+    email: "mail@mailinator.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "nomehost"
+basePath: "/api/snc"
+schemes:
+- "https"
+- "http"
+paths:
+  /sync/add:
+    post:
+      tags:
+      - "Sincronizzazione"
+      summary: "Sincronizzazione Dati con MGO, riceve un oggetto serializzato da MGO"
+      description: ""
+      operationId: "Sync"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "user"
+        type: "string"
+        in: "header"
+      - name: "pwd"
+        type: "string"
+        in: "header"
+      - name: "datas"
+        in: "body"
+        required: true
+        schema:
+          type: "string"
+          description: "Oggetto serializzato"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"

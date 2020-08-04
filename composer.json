@@ -1,0 +1,82 @@
+{
+  "name": "yiisoft/yii2-app-advanced",
+  "description": "Yii 2 Advanced Project Template",
+  "keywords": ["yii2", "framework", "advanced", "project template"],
+  "homepage": "http://www.yiiframework.com/",
+  "type": "project",
+  "license": "BSD-3-Clause",
+  "support": {
+    "issues": "https://github.com/yiisoft/yii2/issues?state=open",
+    "forum": "http://www.yiiframework.com/forum/",
+    "wiki": "http://www.yiiframework.com/wiki/",
+    "irc": "irc://irc.freenode.net/yii",
+    "source": "https://github.com/yiisoft/yii2"
+  },
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=5.4.0",
+    "yiisoft/yii2": ">=2.0.6",
+    "yiisoft/yii2-bootstrap": "*",
+    "yiisoft/yii2-swiftmailer": "*",
+    "dmstr/yii2-adminlte-asset": "2.*",
+    "mdmsoft/yii2-admin": "~2.0",
+    "yii2mod/yii2-sweet-alert": "*",
+    "bower-asset/angular": "~1.6",
+    "linslin/yii2-curl": "*",
+    "kartik-v/yii2-grid": "@dev",
+    "kartik-v/yii2-widgets": "*",
+    "sammaye/yii2-audittrail": "^1.2",
+    "bryglen/yii2-apns-gcm": "1.0.5",
+    "npm-asset/viewerjs": "*",
+    "kartik-v/yii2-datecontrol": "@dev",
+    "bower-asset/angular-material": "^1.1.1",
+    "bower-asset/lodash": "^4.17.4",
+    "kartik-v/yii2-mpdf": "*",
+    "php-coord/php-coord": "^2.0",
+    "proj4php/proj4php": "^2.0",
+    "ruskid/yii2-csv-importer": "dev-master",
+    "codemix/yii2-excelexport": "^2.7",
+    "phpoffice/phpspreadsheet": "^1.2",
+    "nanson/yii2-postgis": "^1.0",
+    "bower-asset/angular-google-places-autocomplete": "^0.2.7",
+    "edvlerblog/yii2-adldap-module": "^4.0.0",
+    "2amigos/yii2-tinymce-widget": "~1.1",
+    "mikemadisonweb/yii2-rabbitmq": "^2.0",
+    "fzaninotto/faker": "^1.8",
+    "davidepastore/codice-fiscale": "^0.4.0",
+    "giggsey/libphonenumber-for-php": "^8.10",
+    "kartik-v/yii2-export": "@dev",
+    "sizeg/yii2-jwt": "^1.1",
+    "understeam/yii2-fcm": "~0.1",
+    "guzzlehttp/guzzle": "^6.3"
+  },
+  "require-dev": {
+    "yiisoft/yii2-debug": "*",
+    "yiisoft/yii2-gii": "*",
+    "yiisoft/yii2-faker": "*",
+    "codeception/base": "^2.2.3",
+    "codeception/verify": "~0.3.1"
+  },
+  "config": {
+    "process-timeout": 1800,
+    "fxp-asset": {
+      "installer-paths": {
+        "npm-asset-library": "vendor/npm",
+        "bower-asset-library": "vendor/bower"
+      },
+      "asset-vcs-driver-options": {
+        "github-no-api": false
+      },
+      "pattern-skip-version": "(-build|-patch)"
+    }
+  },
+  "extra": {
+      "asset-installer-paths": {
+          "npm-asset-library": "vendor/npm",
+          "bower-asset-library": "vendor/bower"
+      }
+  },
+  "scripts": {
+    "post-install-cmd": "php init --env=Development --overwrite=n"
+  }
+}

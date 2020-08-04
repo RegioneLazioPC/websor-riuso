@@ -1,0 +1,21 @@
+.is_running_mas .running_light{
+	width: 10px;
+	height: 10px;
+	border-radius: 5px;
+	display: inline-block;
+	background-color: #d6d6d6
+}
+.is_running_mas.running .running_light{
+	background-color: #2ca65a;
+}
+.is_running_mas.not_running .running_light{
+	background-color: #dd4b39;
+}
+
+.monitor-feed{
+	text-transform: uppercase;
+    font-size: 12px;
+    margin-left: 5px;
+    position: relative;
+    top: -1px;
+}

@@ -1,0 +1,762 @@
+swagger: "2.0"
+info:
+  description: "Documentazione servizi esposti per app da modulo v1 in websor"
+  version: "1.0.0"
+  title: "Protezione civile servizi app"
+  termsOfService: "http://host/terms/"
+  contact:
+    email: "mail@mailinator.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "nomehost"
+basePath: "/api/v1"
+schemes:
+- "https"
+- "http"
+paths:
+  /auth:
+    post:
+      tags:
+      - "Autenticazione"
+      summary: "Registrazione utente"
+      description: ""
+      operationId: "Registrazione"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Body"
+        in: "body"
+        description: "Richiesta"
+        required: true
+        schema: 
+          type: "object"
+          properties:
+            email:
+              type: "string"
+              example: "mail@mailinator.com"
+            telefono:
+              type: "string"
+              example: "3334556677"
+            password:
+              type: "string"
+              example: "password"
+            matricola:
+              type: "string"
+              example: "AD328374832"
+            codice_attivazione:
+              type: "string"
+              example: "6W7VS3DN"
+            codfiscale:
+              type: "string"
+              example: "ABCDEF01A01H501K"
+            tipo_organizzazione:
+              type: "integer"
+              example: 0
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        200:
+          description: "Ok"
+          schema:
+            type: "object"
+            properties:
+              user:
+                type: "object"
+                properties:
+                  id: 
+                    type: 'integer'
+                  username:
+                    type: 'string'
+                  email:
+                    type: 'string'
+  /auth/reset:
+    get:
+      tags:
+      - "Autenticazione"
+      summary: "Richiesta reset password apertura pagina"
+      description: ""
+      operationId: "Reset ask"
+      consumes:
+      - "text/html"
+      produces:
+      - "text/html"
+      parameters:
+      - name: "token"
+        in: "query"
+        description: "Token generato da sistema"
+        required: true
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        200:
+          description: "Ok"
+    post:
+      tags:
+      - "Autenticazione"
+      summary: "Richiesta reset password, impostazione nuova password"
+      description: ""
+      operationId: "Reset set"
+      consumes:
+      - "text/html"
+      produces:
+      - "text/html"
+      parameters:
+      - name: "token"
+        in: "query"
+        description: "Token generato da sistema"
+        required: true
+        type: "string"
+      - name: "password"
+        in: "body"
+        description: "Nuova password"
+        required: true
+        schema: 
+          type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        200:
+          description: "Ok"
+  /auth/confirm:
+    get:
+      tags:
+      - "Autenticazione"
+      summary: "Conferma registrazione utente"
+      description: ""
+      operationId: "Conferma Registrazione"
+      consumes:
+      - "text/html"
+      produces:
+      - "text/html"
+      parameters:
+      - name: "token"
+        in: "query"
+        description: "Richiesta"
+        required: true
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        200:
+          description: "Ok"
+  /auth/login:
+    post:
+      tags:
+      - "Autenticazione"
+      summary: "Accedere all'applicativo"
+      description: ""
+      operationId: "Login"
+      consumes: 
+      - "application/json"
+      produces: 
+      - "application/json"
+      parameters:
+        - name: "Body"
+          in: "body"
+          description: "Richiesta"
+          required: true
+          schema: 
+            type: "object"
+            properties:
+              username:
+                type: "string"
+                example: "mail@mailinator.com"
+              password:
+                type: "string"
+                example: "password"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        200:
+          description: "Ok"
+          schema:
+            type: "object"
+            properties:
+              token: 
+                type: "string"
+              user:
+                type: "object"
+                properties:
+                  id: 
+                    type: 'integer'
+                  username:
+                    type: 'string'
+                  email:
+                    type: 'string'
+              enabled:
+                type: "boolean"
+  /auth/recovery:
+    post:
+      tags:
+      - "Autenticazione"
+      summary: "Richiesta nuova password"
+      description: ""
+      operationId: "NUOVA PASSWORD"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Body"
+        in: "body"
+        description: "Richiesta"
+        required: true
+        schema: 
+          type: "object"
+          properties:
+            email:
+              type: "string"
+              example: "mail@mailinator.com"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "object"
+            properties:
+              message: 
+                type: "string"
+                example: "Ok"
+  /auth/profile:
+    get:
+      tags:
+      - "Autenticazione"
+      summary: "Profilo utente"
+      description: ""
+      operationId: "PROFILE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        required: true
+        description: "Bearer {token}"
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "object"
+            properties:
+              user: 
+                type: "object"
+                properties:
+                  id:
+                    type: "integer"
+                  email:
+                    type: "string"
+                  username:
+                    type: "string"
+              enabled:
+                type: "boolean"
+  /evento/list-by-geo:
+    get:
+      tags:
+        - "Eventi"
+      summary: "Lista eventi"
+      description: ""
+      operationId: "EVENTI"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        required: true
+        description: "Bearer {token}"
+        type: "string"
+      - name: "lat"
+        in: "query"
+        description: "Latitudine"
+        required: true
+        type: "number"
+      - name: "lon"
+        in: "query"
+        description: "Latitudine"
+        required: true
+        type: "number"
+      - name: "distance"
+        in: "query"
+        description: "Distanza max"
+        required: true
+        type: "integer"
+      - name: "expand"
+        in: "query"
+        description: "Oggetti correlati al model UtlEvento da espandere"
+        required: true
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "array"
+            items: 
+              $ref: "#/definitions/Evento"
+  /evento/tipologia:
+    get:
+      tags:
+        - "Eventi"
+      summary: "Lista tipologie di evento disponibili"
+      description: ""
+      operationId: "TIPOLOGIE EVENTI"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        required: true
+        description: "Bearer {token}"
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "array"
+            items: 
+              type: "object"
+              properties:
+                  name: 
+                    type: "string"
+  /segnalazione/list-by-user:
+    post:
+      tags:
+        - "Segnalazioni"
+      summary: "Lista segnalazioni utente"
+      description: ""
+      operationId: "LISTA SEGNALAZIONI UTENTE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        required: true
+        description: "Bearer {token}"
+        type: "string"
+      - name: "expand"
+        in: "query"
+        description: "Oggetti correlati al model UtlSegnalazione da espandere"
+        required: true
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "array"
+            items: 
+              $ref: "#/definitions/SegnalazioneFull"
+  /segnalazione:
+    post:
+      tags:
+        - "Segnalazioni"
+      summary: "Crea segnalazione"
+      description: ""
+      operationId: "CREA SEGNALAZIONE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        required: true
+        description: "Bearer {token}"
+        type: "string"
+      - name: "body"
+        in: "body"
+        description: "Dati segnalazione"
+        required: true
+        schema: 
+          type: "object"
+          properties:
+            lat:
+              type: "number"
+              example: 41.3
+            lon:
+              type: "number"
+              example: 12.1
+            image:
+              type: "string"
+              format: "base64"
+            orientation:
+              type: "integer"
+            sos:
+              type: "boolean"
+            tipologia_evento:
+              type: "integer"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Segnalazione"
+  
+  /media/image/{image}:
+    get:
+      tags:
+      - "Media"
+      summary: "Immagini salvate in backend/web/"
+      description: ""
+      operationId: "View image"
+      consumes:
+      - "application/json"
+      produces:
+      - "image/png"
+      - "image/jpeg"
+      - "image/gif"
+      parameters:
+      - name: "image"
+        in: "path"
+        description: "Nome immagine"
+        required: true
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        200:
+          description: "Ok"
+  /media/image/markers/{image}:
+    get:
+      tags:
+      - "Media"
+      summary: "Markers salvate in backend/web/"
+      description: ""
+      operationId: "View marker"
+      consumes:
+      - "application/json"
+      produces:
+      - "image/png"
+      - "image/jpeg"
+      - "image/gif"
+      parameters:
+      - name: "image"
+        in: "path"
+        description: "Nome marker"
+        required: true
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        200:
+          description: "Ok"
+definitions:
+  Evento:
+    type: "object"
+    properties:
+        id: 
+          type: "integer"
+        tipologia_evento:
+          type: "integer"
+        lat:
+          type: "number"
+        lon:
+          type: "number"
+        idcomune:
+          type: "integer"
+        indirizzo:
+          type: "string"
+        direzione:
+          type: "integer"
+        distanza:
+          type: "number"
+        dataora_evento:
+          type: "string"
+        dataora_modifica:
+          type: "string"
+        num_protocollo:
+          type: "string"
+        sottotipologia_evento:
+          type: "integer"
+        pericolo:
+          type: "integer"
+        feriti:
+          type: "integer"
+        vittime:
+          type: "integer"
+        interruzione_viabilita:
+          type: "integer"
+        aiuto_segnalatore:
+          type: "integer"
+        is_public:
+          type: "integer"
+        geom:
+          type: "array"
+          items:
+            type: "number"
+        idparent:
+          type: "integer"
+        stato:
+          type: "string"
+        closed_at:
+          type: "string"
+        address_type:
+          type: "integer"
+        id_indirizzo:
+          type: "integer"
+        id_civico:
+          type: "integer"
+        id_gestore_evento:
+          type: "integer"
+        has_coc:
+          type: "integer"
+        id_sottostato_evento:
+          type: "integer"
+        archived:
+          type: "integer"
+        note:
+          type: "string"
+        comune:
+          $ref: "#/definitions/Comune"
+        tipologia:
+          $ref: "#/definitions/Tipologia"
+  
+  Comune:
+    type: "object"
+    properties:
+      id: 
+        type: "integer"
+      id_regione:
+        type: "integer"
+      id_provincia:
+        type: "integer"
+      comune:
+        type: "string"
+      idstat:
+        type: "integer"
+      zona_geografica:
+        type: "string"
+      codnuts2:
+        type: "string"
+      codnuts3:
+        type: "string"
+      codmetropoli:
+        type: "string"
+      codistat:
+        type: "string"
+      codcatasto:
+        type: "string"
+      provincia_sigla:
+        type: "string"
+      cap:
+        type: "string"
+      codregione:
+        type: "string"
+      isprovincia:
+        type: "string"
+      altitudine:
+        type: "number"
+      islitoraneo:
+        type: "string"
+      codmontano:
+        type: "string"
+      superficie:
+        type: "string"
+      popolazione2011:
+        type: "string"
+      prefisso_tel:
+        type: "string"
+      zona_altimetrica:
+        type: "string"
+  
+  Tipologia:  
+    type: "object"
+    properties:
+      id: 
+        type: "integer"
+      tipologia:
+        type: "string"
+      idparent:
+        type: "integer"
+      icon_name:
+        type: "string"
+      check_app:
+        type: "integer"
+      icon_date:
+        type: "string"
+      icon_url:
+        type: "string"
+      icon_url_app:
+        type: "string"
+
+  Segnalazione:
+    type: "object"
+    properties:
+      id: 
+        type: "integer"
+      lat: 
+        type: "number"
+      lon:
+        type: "number"
+      sos:
+        type: "boolean"
+      fonte:
+        type: "string"
+      stato:
+        type: "string"
+      idcomune:
+        type: "integer"
+      indirizzo:
+        type: "string"
+      idutente:
+        type: "integer"
+      nome_segnalatore:
+        type: "string"
+      cognome_segnalatore:
+        type: "string"
+      telefono_segnalatore:
+        type: "string"
+      email_segnalatore:
+        type: "string"
+      geom:
+        type: "array"
+        items:
+          type: "number"
+      num_protocollo:
+        type: "string"
+      dataora_segnalazione:
+        type: "string"
+  
+  SegnalazioneFull:
+    type: "object"
+    properties:
+      id: 
+        type: "integer"
+      lat: 
+        type: "number"
+      lon:
+        type: "number"
+      sos:
+        type: "boolean"
+      fonte:
+        type: "string"
+      stato:
+        type: "string"
+      idcomune:
+        type: "integer"
+      indirizzo:
+        type: "string"
+      idutente:
+        type: "integer"
+      nome_segnalatore:
+        type: "string"
+      cognome_segnalatore:
+        type: "string"
+      telefono_segnalatore:
+        type: "string"
+      email_segnalatore:
+        type: "string"
+      geom:
+        type: "array"
+        items:
+          type: "number"
+      num_protocollo:
+        type: "string"
+      note: 
+        type: "string"
+      direzione:
+        type: "integer"
+      distanza:
+        type: "integer"
+      dataora_segnalazione:
+        type: "string"
+      pericolo:
+        type: "integer"
+      feriti:
+        type: "integer"
+      vittime:
+        type: "integer"
+      interruzione_viabilita:
+        type: "integer"
+      aiuto_segnalatore:
+        type: "integer"
+      tipologia_evento:
+        type: "integer"
+      sottotipologia_evento:
+        type: "integer"
+      tipologia:
+        $ref: "#/definitions/Tipologia"
+    

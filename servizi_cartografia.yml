@@ -1,0 +1,882 @@
+swagger: "2.0"
+info:
+  description: "Documentazione servizi esposti per modulo cartografico"
+  version: "1.0.0"
+  title: "Protezione civile servizi cartografia"
+  termsOfService: "http://host/terms/"
+  contact:
+    email: "mail@mailinator.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "nomehost"
+basePath: "/api/map"
+schemes:
+- "https"
+- "http"
+paths:
+  /auth/login:
+    post:
+      tags:
+        - "Auth"
+      summary: "Accesso utente"
+      description: ""
+      operationId: "LOGIN"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            username:
+              type: "string"
+            password:
+              type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "object"
+            properties:
+              permissions:
+                type: "array"
+                items:
+                  $ref: "#/definitions/Permission"
+              token:
+                type: "string"
+              user:
+                $ref: "#/definitions/User"
+  /auth/profile:
+    get:
+      tags:
+        - "Auth"
+      summary: "Profilo utente"
+      description: ""
+      operationId: "PROFILO"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "object"
+            properties:
+              permissions:
+                type: "array"
+                items:
+                  $ref: "#/definitions/Permission"
+              user:
+                $ref: "#/definitions/User"
+  /stub/data:
+    get:
+      tags:
+        - "Stub"
+      summary: "Dati per popolazione tendine opzioni"
+      description: ""
+      operationId: "DATI_STUB"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "object"
+            properties:
+              aggregatori: 
+                  type: "array"
+                  items:
+                    type: "object"
+              categorie: 
+                  type: "array"
+                  items:
+                    type: "object"
+              comuni: 
+                  type: "array"
+                  items:
+                    type: "object"
+              fonti_segnalazione: 
+                  type: "array"
+                  items:
+                    type: "object"
+              mappatura_categorie_aggregatori: 
+                  type: "array"
+                  items:
+                    type: "object"
+              province: 
+                  type: "array"
+                  items:
+                    type: "object"
+              ruoli_segnalatore: 
+                  type: "array"
+                  items:
+                    type: "object"
+              specializzazioni: 
+                  type: "array"
+                  items:
+                    type: "object"
+              tipi_evento: 
+                  type: "array"
+                  items:
+                    type: "object"
+              tipo_attrezzature: 
+                  type: "array"
+                  items:
+                    type: "object"
+              tipo_automezzi: 
+                  type: "array"
+                  items:
+                    type: "object"
+  /autocomplete/search:
+    get:
+      tags:
+        - "Autocomplete"
+      summary: "Ricerca indirizzi"
+      description: ""
+      operationId: "AUTOCOMPLETEADDRESSES"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "address"
+        type: "string"
+        in: "query"
+        required: true
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Address"
+  /organizzazione/{id}:
+    get:
+      tags:
+        - "Organizzazioni"
+      summary: "Vedi dati organizzazione"
+      description: ""
+      operationId: "VIEW_ORGANIZZAZIONE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "id"
+        type: "integer"
+        in: "path"
+        required: true
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Organizzazione"
+  /organizzazione/all:
+    get:
+      tags:
+        - "Organizzazioni"
+      summary: "Vedi organizzazioni"
+      description: ""
+      operationId: "VIEW_ALL_ORGANIZZAZIONE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Organizzazione"
+  /segnalazione:
+    post:
+      tags:
+        - "Segnalazioni"
+      summary: "Crea segnalazione"
+      description: ""
+      operationId: "CREA_SEGNALAZIONE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "body"
+        in: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/SegnalazioneAdd"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Segnalazione"
+  /segnalazione/{id}:
+    get:
+      tags:
+        - "Segnalazioni"
+      summary: "Vedi segnalazione"
+      description: ""
+      operationId: "VEDI_SEGNALAZIONE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "id"
+        type: "integer"
+        in: "path"
+        required: true
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Segnalazione"
+  /segnalazione/{id}/change-position:
+    post:
+      tags:
+        - "Segnalazioni"
+      summary: "Modifica coordinate segnalazione"
+      description: ""
+      operationId: "CHANGE_SEGNALAZIONE_POSITION"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "id"
+        in: "path"
+        type: "integer"
+        required: true
+      - name: "body"
+        in: "body"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            lat: 
+              type: "number"
+            lon: 
+              type: "number"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Segnalazione"
+  /segnalazione/{id}/attach-event/{idEvento}:
+    post:
+      tags:
+        - "Segnalazioni"
+      summary: "Modifica coordinate segnalazione"
+      description: ""
+      operationId: "ATTACH_EVENTO_SEGNALAZIONE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "id"
+        in: "path"
+        type: "integer"
+        required: true
+      - name: "idEvento"
+        in: "path"
+        type: "integer"
+        required: true
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Segnalazione"
+  /segnalazione/{id}/change-to-event:
+    post:
+      tags:
+        - "Segnalazioni"
+      summary: "Modifica coordinate segnalazione"
+      description: ""
+      operationId: "CHANGE_TO_EVENTO_SEGNALAZIONE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "id"
+        in: "path"
+        type: "integer"
+        required: true
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Segnalazione"
+  /evento:
+    post:
+      tags:
+        - "Eventi"
+      summary: "Crea evento"
+      description: ""
+      operationId: "CREA_EVENTO"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "body"
+        in: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/EventoAdd"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Evento"
+  /evento/{id}:
+    get:
+      tags:
+        - "Eventi"
+      summary: "Vedi evento"
+      description: ""
+      operationId: "VEDI_EVENTO"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "id"
+        type: "integer"
+        in: "path"
+        required: true
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Evento"
+  /evento/{id}/change-position:
+    post:
+      tags:
+        - "Eventi"
+      summary: "Modifica posizione evento"
+      description: ""
+      operationId: "CHANGE_POSITION_EVENTO"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "id"
+        type: "integer"
+        in: "path"
+        required: true
+      - name: "body"
+        in: "body"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            lat: 
+              type: "number"
+            lon: 
+              type: "number"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/Evento"
+            
+  /ingaggi/search:
+    get:
+      tags:
+        - "Attivazioni"
+      summary: "Cerca organizzazioni da attivare"
+      description: ""
+      operationId: "CERCA_ORG_DA_ATTIVARE"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "lat"
+        in: "query"
+        type: "number"
+        required: true
+      - name: "lon"
+        in: "query"
+        type: "number"
+        required: true
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+          schema:
+            type: "array"
+            description: "FeatureCollection"
+            items:
+              type: "object"
+              description: "Feature"
+  /ingaggi/engage:
+    get:
+      tags:
+        - "Attivazioni"
+      summary: "Attiva mezzo / attrezzatura"
+      description: ""
+      operationId: "ATTIVA_MEZZO_ATTREZZATURA"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "ref_type"
+        description: "Tipo riferimento: mezzo|attrezzatura"
+        in: "query"
+        type: "string"
+        required: true
+      - name: "ref_id"
+        in: "query"
+        type: "integer"
+        required: true
+      - name: "event_id"
+        in: "query"
+        type: "integer"
+        required: true
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+  /media/view-media/{id}:
+    post:
+      tags:
+        - "Media"
+      summary: "Vedi immagine"
+      description: ""
+      operationId: "VIEW_IMAGE"
+      consumes:
+      - "application/json"
+      produces:
+      - "image/png"
+      - "image/jpeg"
+      - "image/gif"
+      parameters:
+      - name: "Authorization"
+        in: "header"
+        type: "string"
+      - name: "id"
+        type: "integer"
+        in: "path"
+        required: true
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+definitions:
+  User:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      email:
+        type: "string"
+      username:
+        type: "string"
+  Permission:
+    type: "object"
+    properties:
+      type: 
+        type: "integer"
+      name:
+        type: "string"
+      description:
+        type: "string"
+      ruleName:
+        type: "string"
+      data:
+        type: "string"
+  Civico:
+    type: "object"
+    properties:
+      cap: 
+        type: "string"
+      lat:
+        type: "number"
+      lon:
+        type: "number"
+  Address:
+    type: "object"
+    properties:
+      civici:
+        type: "array"
+        items: 
+          $ref: "#/definitions/Civico"
+      comune:
+        type: "string"
+      full_address:
+        type: "string"
+      id:
+        type: "integer"
+      lat:
+        type: "number"
+      lon:
+        type: "number"
+      provincia:
+        type: "string"
+      search_field:
+        type: "string"
+      'type':
+        type: "integer"
+      via:
+        type: "string"
+  Organizzazione:
+    type: "object"
+    properties:
+      id: 
+        type: "integer"
+      num_elenco_territoriale:
+        type: "integer"
+      denominazione:
+        type: "string"
+      tipologia:
+        type: "string"
+  SegnalazioneAdd:
+    type: "object"
+    properties:
+      cognome:
+        type: "string"
+      nome:
+        type: "string"
+      telefono:
+        type: "string"
+      idcomune:
+        type: "integer"
+      indirizzo:
+        type: "string"
+      lat:
+        type: "number"
+      lon:
+        type: "number"
+      luogo:
+        type: "string"
+      tipologia_evento:
+        type: "integer"
+      sottotipologia_evento:
+        type: "integer"
+  Segnalazione:
+    type: "object"
+    properties:
+      cognome_segnalatore:
+        type: "string"
+      email_segnalatore:
+        type: "string"
+      geom:
+        type: "array"
+        items:
+          type: "number"
+      id:
+        type: "string"
+      idcomune:
+        type: "integer"
+      idsalaoperativa:
+        type: "integer"
+      indirizzo:
+        type: "string"
+      lat:
+        type: "number"
+      lon:
+        type: "number"
+      luogo:
+        type: "string"
+      nome_segnalatore:
+        type: "string"
+      num_protocollo:
+        type: "string"
+      sottotipologia_evento:
+        type: "integer"
+      stato:
+        type: "string"
+      telefono_segnalatore:
+        type: "string"
+      tipologia_evento:
+        type: "integer"
+  Comune:
+    type: "object"
+    properties:
+      altitudine: 
+        type: "string"
+      cap: 
+        type: "string"
+      codcatasto: 
+        type: "string"
+      codistat: 
+        type: "string"
+      codmetropoli: 
+        type: "integer"
+      codmontano: 
+        type: "string"
+      codnuts2: 
+        type: "string"
+      codnuts3: 
+        type: "string"
+      codregione: 
+        type: "string"
+      comune: 
+        type: "string"
+      id:
+        type: "integer"
+      id_provincia:
+        type: "integer"
+      id_regione:
+        type: "integer"
+      idstat:
+        type: "integer"
+      islitoraneo:
+        type: "integer"
+      isprovincia:
+        type: "integer"
+      popolazione2011:
+        type: "number"
+      prefisso_tel:
+        type: "number"
+      provincia_sigla:
+        type: "string"
+      superficie:
+        type: "number"
+      zona_altimetrica:
+        type: "integer"
+      zona_geografica:
+        type: "string"
+  EventoAdd:
+    type: "object"
+    properties:
+      idcomune: 
+        type: "integer"
+      indirizzo: 
+        type: "string"
+      lat:
+        type: "number"
+      lon:
+        type: "number"
+      luogo: 
+        type: "string"
+      sottotipologia_evento: 
+        type: "integer"
+      stato: 
+        type: "string"
+      tipologia_evento: 
+        type: "integer"
+  Evento:
+    type: "object"
+    properties:
+      comune:
+        $ref: "#/definitions/Comune"
+      dataora_evento:
+        type: "string"
+      dataora_modifica:
+        type: "string"
+      geom:
+        type: "array"
+        items:
+          type: "number"
+      id:
+        type: "integer"
+      idcomune:
+        type: "integer"
+      indirizzo:
+        type: "string"
+      lat:
+        type: "number"
+      lon:
+        type: "number"
+      luogo:
+        type: "string"
+      sottotipologia_evento:
+        type: "integer"
+      stato:
+        type: "string"
+      tipologia_evento:
+        type: "integer"
+  
+      

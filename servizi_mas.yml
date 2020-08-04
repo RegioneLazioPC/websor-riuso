@@ -1,0 +1,116 @@
+swagger: "2.0"
+info:
+  description: "Documentazione servizi esposti per feedback modulo mas"
+  version: "1.0.0"
+  title: "Protezione civile servizi MAS feedback"
+  termsOfService: "http://host/terms/"
+  contact:
+    email: "mail@mailinator.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "nomehost"
+basePath: "/api/mas"
+schemes:
+- "https"
+- "http"
+paths:
+  /feedback/mas/{id}/{token}:
+    post:
+      tags:
+      - "Feedback"
+      summary: "Ricezione feedback sugli invii del modulo MAS"
+      description: ""
+      operationId: "Sync"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "user"
+        type: "string"
+        in: "header"
+      - name: "pwd"
+        type: "string"
+        in: "header"
+      - name: "id"
+        type: "integer"
+        in: "path"
+        description: "Id invio"
+        required: true
+      - name: "token"
+        in: "path"
+        type: "string"
+        description: "Token generato dal sistema per quell'invio"
+        required: true
+      - name: "datas"
+        in: "body"
+        required: true
+        schema:
+          type: "object"
+          properties:
+            sent:
+              type: "array"
+              items: 
+                $ref: "#/definitions/Contact"
+            received:
+              type: "array"
+              items: 
+                $ref: "#/definitions/Contact"
+            not_received:
+              type: "array"
+              items: 
+                $ref: "#/definitions/Contact"
+            not_send:
+              type: "array"
+              items: 
+                $ref: "#/definitions/Contact"
+            invalid:
+              type: "array"
+              items: 
+                $ref: "#/definitions/Contact"
+            no_feedback:
+              type: "array"
+              items: 
+                $ref: "#/definitions/Contact"
+            duplicated:
+              type: "array"
+              items: 
+                $ref: "#/definitions/Contact"
+            mancata_consegna:
+              type: "array"
+              items: 
+                $ref: "#/definitions/Contact"
+      responses:
+        422:
+          description: "Dati non validi"
+        403:
+          description: "Non autorizzato"
+        404:
+          description: "Non trovato"
+        500:
+          description: "Errore server interno"
+        200:
+          description: "Ok"
+definitions:
+  Contact:
+    type: "object"
+    properties:
+      id_rubrica_contatto:
+        type: "integer"
+      tipo_rubrica_contatto:
+        type: "string"
+      valore_rubrica_contatto:
+        type: "string"
+      channel:
+        type: "string"
+      status:
+        type: "integer"
+      id:
+        type: "integer"
+      sent_time:
+        type: "string"
+      feedback_time:
+        type: "string"
+      _id:
+        type: "integer"
