@@ -1,0 +1,80 @@
+# This repository adheres to the publiccode.yml standard by including this 
+# metadata file that makes public software easily discoverable.
+# More info at https://github.com/italia/publiccode.yml
+
+publiccodeYmlVersion: '0.2'
+applicationSuite: SEIPCI
+categories:
+  - event-management
+description:
+  it:
+    apiDocumentation: 'https://github.com/RegioneLazioPC/websor-riuso/tree/master/apidoc'
+    features:
+      - Gestione SOR
+    genericName: WebSOR Lazio
+    localisedName: WebSOR Lazio
+    longDescription: >
+      Il sistema di Gestione di Sala Operativa Regionale (SOR) di Protezione
+      Civile, abilita la Sala Operativa Regionale alla gestione e al
+      tracciamento delle operazioni effettuate.
+
+
+      Specificatamente sviluppato per la la Sala Operativa Unificata (SOUP) ,
+      consente ai vari enti comunicare e tener traccia della azione nel suo
+      complesso, prevede specificità per le campagne AIB (Anti Incendio
+      Boschivo) tenendo traccia nello specifico della gestione della Flotta
+      Aerea Regionale, automatizzandone anche incombenze di tracciamento delle
+      informazioni e di comunicazione.
+
+
+      Dotata di un database geografico, abilita gli operatori ad utilizzare
+      differenti metodologie di Georeferenziazione degli eventi e di creazione
+      diretta da un punto sulla mappa.
+
+
+      Abilita la SOR/SOUP a tener traccia di mezzi/attrezzature impiegati così
+      come dei Volontari, localizzandone quanto necessario per distanza stradale
+      dall'evento in gestione.
+    shortDescription: Sistema di Gestione di Sala Operativa Regionale di Protezione Civile
+developmentStatus: development
+intendedAudience:
+  countries:
+    - it
+  scope:
+    - emergency-services
+it:
+  conforme:
+    gdpr: false
+    lineeGuidaDesign: false
+    misureMinimeSicurezza: false
+    modelloInteroperabilita: false
+  countryExtensionVersion: '0.2'
+  piattaforme:
+    anpr: false
+    cie: false
+    pagopa: false
+    spid: false
+legal:
+  license: AGPL-3.0-or-later
+  mainCopyrightOwner: Regione Lazio - Agenzia Regionale di Protezione Civile
+localisation:
+  availableLanguages:
+    - it
+  localisationReady: false
+maintenance:
+  contacts:
+    - email: marco.serantoni@laziocrea.it
+      name: Marco Serantoni
+      phone: '+390651689725'
+  contractors:
+    - name: Laziocrea SpA
+      until: '2022-01-01'
+      website: 'http://www.laziocrea.it'
+  type: contract
+name: WebSOR Lazio
+platforms:
+  - web
+releaseDate: '2020-06-01'
+softwareType: standalone/web
+softwareVersion: 3.0+
+url: 'https://github.com/RegioneLazioPC/websor-riuso'
