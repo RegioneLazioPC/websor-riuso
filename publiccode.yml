@@ -54,6 +54,8 @@ it:
     cie: false
     pagopa: false
     spid: false
+  riuso:
+    codiceIPA: r_lazio
 legal:
   license: AGPL-3.0-or-later
   mainCopyrightOwner: Regione Lazio - Agenzia Regionale di Protezione Civile
