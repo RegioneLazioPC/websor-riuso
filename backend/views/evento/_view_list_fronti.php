@@ -162,7 +162,7 @@ $dataProvider_fronti = new ActiveDataProvider([
                             }
                         },
                         'task' => function ($url, $model) {
-                            $operatoreId = Yii::$app->user->identity->operatore->id;
+                            $operatoreId = (Yii::$app->user->identity->operatore) ? Yii::$app->user->identity->operatore->id : null;
                             
                             if(Yii::$app->user->identity->multipleCan(['createTaskEvento', 'updateTaskEvento', 'createIngaggio', 'updateIngaggio',
                                 'createRichiestaCanadair', 'createRichiestaElicottero', 'createRichiestaDos',

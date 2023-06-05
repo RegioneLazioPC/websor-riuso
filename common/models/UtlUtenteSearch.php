@@ -13,7 +13,7 @@ use common\models\UtlUtente;
 class UtlUtenteSearch extends UtlUtente
 {
 
-    public $created_at, $status, $data_registrazione_dal, $data_registrazione_al, $specializzazione, $id_organizzazione;
+    public $created_at, $status, $nome_organizzazione, $data_registrazione_dal, $data_registrazione_al, $specializzazione, $id_organizzazione;
 
     /**
      * @inheritdoc
@@ -22,7 +22,7 @@ class UtlUtenteSearch extends UtlUtente
     {
         return [
             [['id', 'iduser','id_ruolo_segnalatore','tipo','enabled', 'id_organizzazione', 'specializzazione'], 'integer'],
-            [['nome', 'cognome', 'codfiscale', 'data_nascita', 'luogo_nascita', 'telefono', 'email', 'username', 'created_at', 'status'], 'safe'],
+            [['nome', 'cognome', 'nome_organizzazione', 'codfiscale', 'data_nascita', 'luogo_nascita', 'telefono', 'email', 'username', 'created_at', 'status'], 'safe'],
             [['data_registrazione_dal', 'data_registrazione_al', 'smscode'], 'safe'],
         ];
     }
@@ -70,6 +70,11 @@ class UtlUtenteSearch extends UtlUtente
             'desc' => ['user.status' => SORT_DESC],
         ];
 
+        $dataProvider->sort->attributes['nome_organizzazione'] = [
+            'asc' => ['vol_organizzazione.denominazione' => SORT_ASC],
+            'desc' => ['vol_organizzazione.denominazione' => SORT_DESC],
+        ];
+
         $dataProvider->sort->attributes['id_organizzazione'] = [
             'asc' => ['vol_organizzazione.ref_id' => SORT_ASC],
             'desc' => ['vol_organizzazione.ref_id' => SORT_DESC],
@@ -104,6 +109,9 @@ class UtlUtenteSearch extends UtlUtente
 
         if(!empty($this->id_organizzazione)){
             $query->andFilterWhere(['vol_organizzazione.ref_id'=>$this->id_organizzazione]);
+        }
+        if(!empty($this->nome_organizzazione)){
+            $query->andFilterWhere(['ilike','vol_organizzazione.denominazione',$this->nome_organizzazione]);
         }
 
         if(!empty($this->specializzazione)) {

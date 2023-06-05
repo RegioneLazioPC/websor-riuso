@@ -132,7 +132,9 @@ $full_cols[] = $actions;
     <h1><?= Html::encode($this->title) ?></h1>
     
     <p>
-        <?= Html::a('Crea nuovo record', ['create-rubrica'], ['class' => 'btn btn-success']) ?>
+        <?php if (Yii::$app->user->can('createMasRubrica')): ?>
+            <?= Html::a('Crea nuovo record', ['create-rubrica'], ['class' => 'btn btn-success']) ?>
+        <?php endif; ?>
     </p>
 
     <?= GridView::widget([

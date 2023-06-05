@@ -34,7 +34,7 @@ $this->registerJs($js, $this::POS_READY);
 
 $heading = '<h3 class="panel-title"><i class="fas fa-list"></i>  '.Html::encode('Lista richieste Canadair').'</h3>';
 
-if(Yii::$app->user->can('createRichiestaCanadair')) $heading .= Html::button(
+if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('createRichiestaCanadair')) $heading .= Html::button(
                 '<i class="glyphicon glyphicon-plus"></i> Nuova richiesta Canadair',
                 [
                     'title' => Yii::t('app', 'Nuova richiesta Canadair'),
@@ -112,7 +112,7 @@ if(Yii::$app->user->can('createRichiestaCanadair')) $heading .= Html::button(
             'template'=>'{update}',
             'buttons' => [
                 'update' => function ($url, $model) {
-                    return (Yii::$app->user->can('updateRichiestaCanadair')) ? Html::a('<span class="fa fa-pencil"></span>&nbsp;&nbsp;',
+                    return ($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('updateRichiestaCanadair')) ? Html::a('<span class="fa fa-pencil"></span>&nbsp;&nbsp;',
                         '#',
                         [
                             'title' => Yii::t('app', 'Aggiorna richiesta Canadair'),
@@ -129,7 +129,7 @@ if(Yii::$app->user->can('createRichiestaCanadair')) $heading .= Html::button(
 
 
 <?php
-if(Yii::$app->user->can('createRichiestaCanadair')) : 
+if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('createRichiestaCanadair')) : 
     // MODAL SEND MAIL RICHIESTA DOS
     Modal::begin([
         'id' => 'modal-canadair',
@@ -146,7 +146,7 @@ endif;
 
 
 <?php
-if(Yii::$app->user->can('updateRichiestaCanadair')) :
+if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('updateRichiestaCanadair')) :
     // MODAL UPDATE DOS
     Modal::begin([
         'id' => 'modal-update-canadair',

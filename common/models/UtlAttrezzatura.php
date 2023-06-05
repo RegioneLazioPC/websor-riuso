@@ -56,8 +56,9 @@ class UtlAttrezzatura extends \yii\db\ActiveRecord
             [['engaged'], 'default', 'value' => false],
             [['capacita'], 'number'],
             [['meta'], 'safe'],
-            [['classe', 'sottoclasse', 'modello', 'id_sync'], 'string', 'max' => 100],
-            [['unita','tempo_attivazione','allestimento'], 'string', 'max' => 255],
+            [['classe', 'sottoclasse', 'modello','allestimento'], 'safe'],
+            [[ 'id_sync'], 'string', 'max' => 100],
+            [['unita','tempo_attivazione'], 'string', 'max' => 255],
             [['idtipo'], 'exist', 'skipOnError' => true, 'targetClass' => UtlAttrezzaturaTipo::className(), 'targetAttribute' => ['idtipo' => 'id']],
             [['idautomezzo'], 'exist', 'skipOnError' => true, 'targetClass' => UtlAutomezzo::className(), 'targetAttribute' => ['idautomezzo' => 'id']],
             [['idcategoria'], 'exist', 'skipOnError' => true, 'targetClass' => UtlCategoriaAutomezzoAttrezzatura::className(), 'targetAttribute' => ['idcategoria' => 'id']],
@@ -89,6 +90,11 @@ class UtlAttrezzatura extends \yii\db\ActiveRecord
             'idautomezzo' => 'Automezzo'            
         ];
     }
+
+    public function extraFields() {
+        return ['tipo'];
+    }
+
 
     /**
      * @return \yii\db\ActiveQuery

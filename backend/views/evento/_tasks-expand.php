@@ -54,7 +54,7 @@ $dataProvider_fronti = new ActiveDataProvider([
                         'label' => 'Operatore',
                         'contentOptions' => ['style'=>'max-width: 100px; white-space: normal; overflow: auto; word-wrap: break-word;'],
                         'value' => function($model){
-                            return $model->operatore->anagrafica->nome . " " . $model->operatore->anagrafica->cognome;
+                            return (!empty($model->operatore)) ? Html::encode( @$model->operatore->anagrafica->nome . " " . @$model->operatore->anagrafica->cognome ) : 'CHIUSO DA SCRIPT';
                         }
                     ],
                     [

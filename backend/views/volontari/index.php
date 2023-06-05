@@ -9,6 +9,75 @@ use kartik\grid\GridView;
 
 $this->title = 'Volontari';
 $this->params['breadcrumbs'][] = $this->title;
+
+$cols = [
+    ['class' => 'yii\grid\SerialColumn'],
+    'id',
+    [
+        'label' => 'Nome',
+        'attribute' => 'anagrafica.nome',
+        'value' => function($data){
+            if(!empty($data['anagrafica'])){
+                return $data['anagrafica']['nome'];
+            }
+        }
+    ],
+    [
+        'label' => 'Cognome',
+        'attribute' => 'anagrafica.cognome',
+        'value' => function($data){
+            if(!empty($data['anagrafica'])){
+                return $data['anagrafica']['cognome'];
+            }
+        }
+    ],
+    [
+        'label' => 'COD.FISC.',
+        'attribute' => 'anagrafica.codfiscale',
+        'value' => function($data){
+            if(!empty($data['anagrafica'])){
+                return $data['anagrafica']['codfiscale'];
+            }
+        }
+    ],
+    [
+        'label' => 'Operativo',
+        'attribute' => 'operativo',
+        'value' => function($data){
+            return ($data['operativo']) ? 'Si' : 'No';
+        }
+    ]
+];
+
+if(Yii::$app->FilteredActions->type != 'comunale'){
+    $cols = array_merge($cols, [
+        'ruolo',
+        'spec_principale',
+        [   
+            'label' => 'Valido dal',
+            'attribute' => 'valido_dal',
+            'filterType' => GridView::FILTER_DATE,
+            'filterWidgetOptions' => [
+                'type' => 1,
+                'pluginOptions' => [
+                    'format' => 'yyyy-mm-dd',
+                    'autoclose' => true,
+                    'todayHighlight' => true,
+                ]
+            ]
+        ]
+    ]);
+}
+
+
+$cols = array_merge($cols, [
+    'organizzazione.denominazione',
+    [
+        'class' => 'yii\grid\ActionColumn',
+        'template'=>'{view}',                
+    ]
+]);
+
 ?>
 <div class="vol-volontario-index">
 
@@ -23,64 +92,6 @@ $this->params['breadcrumbs'][] = $this->title;
         'filterModel' => $searchModel,
         'perfectScrollbar' => true,
         'perfectScrollbarOptions' => [],
-        'columns' => [
-            ['class' => 'yii\grid\SerialColumn'],
-
-            'id',
-            [
-                'label' => 'Nome',
-                'attribute' => 'anagrafica.nome',
-                'value' => function($data){
-                    if(!empty($data['anagrafica'])){
-                        return $data['anagrafica']['nome'];
-                    }
-                }
-            ],
-            [
-                'label' => 'Cognome',
-                'attribute' => 'anagrafica.cognome',
-                'value' => function($data){
-                    if(!empty($data['anagrafica'])){
-                        return $data['anagrafica']['cognome'];
-                    }
-                }
-            ],
-            [
-                'label' => 'COD.FISC.',
-                'attribute' => 'anagrafica.codfiscale',
-                'value' => function($data){
-                    if(!empty($data['anagrafica'])){
-                        return $data['anagrafica']['codfiscale'];
-                    }
-                }
-            ],
-            [
-                'label' => 'Operativo',
-                'attribute' => 'operativo',
-                'value' => function($data){
-                    return ($data['operativo']) ? 'Si' : 'No';
-                }
-            ],
-            'ruolo',
-            'spec_principale',
-            [   
-                'label' => 'Valido dal',
-                'attribute' => 'valido_dal',
-                'filterType' => GridView::FILTER_DATE,
-                'filterWidgetOptions' => [
-                    'type' => 1,
-                    'pluginOptions' => [
-                        'format' => 'yyyy-mm-dd',
-                        'autoclose' => true,
-                        'todayHighlight' => true,
-                    ]
-                ]
-            ],
-            'organizzazione.denominazione',
-            [
-                'class' => 'yii\grid\ActionColumn',
-                'template'=>'{view}',                
-            ],
-        ],
+        'columns' => $cols,
     ]); ?>
 </div>

@@ -12,8 +12,8 @@ class m190118_172605_alter_con_mas_invio_contact extends Migration
      */
     public function safeUp()
     {
-        $this->addColumn('con_mas_invio_contact', 'vendor', $this->string(10)->defaultValue('') );
-        $this->addColumn('con_mas_invio_contact', 'valore_riferimento', $this->string(255)->defaultValue('') );
+        $this->addColumn('con_mas_invio_contact', 'vendor', $this->string(10)->defaultValue(''));
+        $this->addColumn('con_mas_invio_contact', 'valore_riferimento', $this->string(255)->defaultValue(''));
     }
 
     /**
@@ -21,8 +21,8 @@ class m190118_172605_alter_con_mas_invio_contact extends Migration
      */
     public function safeDown()
     {
-        $this->dropColumn( 'con_mas_invio_contact', 'vendor' );
-        $this->addColumn('con_mas_invio_contact', 'valore_riferimento' );
+        $this->dropColumn('con_mas_invio_contact', 'vendor');
+        $this->dropColumn('con_mas_invio_contact', 'valore_riferimento');
     }
 
     /*

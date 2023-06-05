@@ -59,6 +59,7 @@ composer install
 CREATE EXTENSION postgis;
 CREATE EXTENSION pgrouting;
 CREATE EXTENSION hstore;
+CREATE EXTENSION pg_trgm;
 CREATE SCHEMA routing;
 
 ```
@@ -83,7 +84,6 @@ psql -h hostname -d databasename -U username -f {path}console/data/elicotteri/ar
 
 ```bash
 ./yii migrate --migrationPath=@yii/rbac/migrations/
-./yii migrate --migrationPath=@vendor/sammaye/yii2-audittrail/migrations
 
 ./yii migrate
 ```

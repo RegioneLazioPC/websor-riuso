@@ -27,6 +27,24 @@ class User extends ActiveRecord implements IdentityInterface
     const STATUS_DELETED = 0;
     const STATUS_ACTIVE = 10;
 
+    public static function getStatusString($status) {
+        switch ($status) {
+            case self::STATUS_ACTIVE:
+                return 'ATTIVO';
+                break;
+            default:
+                return 'BLOCCATO';
+                break;
+        }
+    }
+
+    public $spid_login = false;
+    public $idp = null;
+    public $spid_login_session_id = null;
+    public $level = null;
+    public $id_organizzazione = null;
+    public $rappresentante_legale = 0;
+    public $id_utl_utente = null;
 
     /**
      * @inheritdoc
@@ -92,8 +110,36 @@ class User extends ActiveRecord implements IdentityInterface
         $ip = $request->getUserIP();
         $agent = $request->getUserAgent();
 
-        if ( $ip != $token->getClaim( 'ip' ) || $agent != $token->getClaim( 'agent' ) ) throw new \yii\web\HttpException( 401, "Non sei autorizzato" );
-        return static::findOne(['id' => $token->getClaim( 'uid' )]);
+        if ( $agent != $token->getClaim( 'agent' ) ) {
+            Yii::error('Utente UID: '.$token->getClaim( 'uid' ).' con AGENT: ' . $agent . ' diverso da AGENT in JWT: ' . $token->getClaim('agent') , 'api');
+            throw new \yii\web\HttpException( 401, "Non sei autorizzato" );
+        }
+
+        if ( $ip != $token->getClaim( 'ip' ) ) {
+            Yii::error('Utente UID: '.$token->getClaim( 'uid' ).' con IP: ' . $ip . ' diverso da IP in JWT: ' . $token->getClaim('ip') , 'api');
+            //throw new \yii\web\HttpException( 401, "Non sei autorizzato" );
+        }
+
+        $user = static::findOne(['id' => $token->getClaim( 'uid' )]);
+        if(!$user) return false;
+
+        if($token->hasClaim('id_utl_utente') && $token->getClaim('id_utl_utente')) {
+            $user->id_utl_utente = $token->getClaim('id_utl_utente');
+        }
+
+        if($token->hasClaim('id_organizzazione') && $token->getClaim('id_organizzazione')) {
+            $user->id_organizzazione = $token->getClaim('id_organizzazione');
+            $user->rappresentante_legale = $token->getClaim('rappresentante_legale');
+        }
+
+        if($token->hasClaim('spid_login') && $token->getClaim('spid_login')) {
+            $user->spid_login_session_id = $token->getClaim('spid_login_session_id');
+            $user->idp = $token->getClaim('idp');
+            $user->level = $token->getClaim('level');
+            $user->spid_login = $token->getClaim('spid_login');
+        }
+
+        return $user;
     }
 
     
@@ -122,7 +168,7 @@ class User extends ActiveRecord implements IdentityInterface
 
         return static::findOne([
             'password_reset_token' => $token,
-            'status' => self::STATUS_ACTIVE,
+            //'status' => self::STATUS_ACTIVE,
         ]);
     }
 
@@ -135,12 +181,17 @@ class User extends ActiveRecord implements IdentityInterface
     public static function isPasswordResetTokenValid($token)
     {
         if (empty($token)) {
+            Yii::error('TOKEN VUOTO', 'api');
             return false;
         }
 
         $timestamp = (int) substr($token, strrpos($token, '_') + 1);
         $expire = Yii::$app->params['user.passwordResetTokenExpire'];
-        return $timestamp + $expire >= time();
+
+        $expiry_time = $timestamp + $expire;
+        if($expiry_time < time()) Yii::error('TOKEN SCADUTO ' . $expiry_time . ' VERIFICANDO ' . $timestamp . ' DA TOKEN ' . $token, 'api');
+
+        return $expiry_time >= time();
     }
 
     /**
@@ -244,7 +295,7 @@ class User extends ActiveRecord implements IdentityInterface
     public static function findByRolesName($roles)
     {
         return static::find()
-            ->join('LEFT JOIN','auth_assignment','auth_assignment.user_id::integer = id')
+            ->join('LEFT JOIN','auth_assignment','auth_assignment.user_id::integer = "user".id')
             ->where(['auth_assignment.item_name' => $roles]);
     }
 

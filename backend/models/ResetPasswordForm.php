@@ -1,6 +1,7 @@
 <?php
 namespace backend\models;
 
+use Yii;
 use yii\base\Model;
 use yii\base\InvalidParamException;
 use common\models\User;
@@ -28,10 +29,12 @@ class ResetPasswordForm extends Model
     public function __construct($token, $config = [])
     {
         if (empty($token) || !is_string($token)) {
+            Yii::error('RESET TOKEN VUOTO', 'api');
             throw new InvalidParamException('Password reset token cannot be blank.');
         }
         $this->_user = User::findByPasswordResetToken($token);
         if (!$this->_user) {
+            Yii::error('UTENTE PER TOKEN NON TROVATO', 'api');
             throw new InvalidParamException('Wrong password reset token.');
         }
         parent::__construct($config);
@@ -56,6 +59,7 @@ class ResetPasswordForm extends Model
     public function resetPassword()
     {
         $user = $this->_user;
+        $user->status = User::STATUS_ACTIVE;
         $user->setPassword($this->password);
         $user->removePasswordResetToken();
 

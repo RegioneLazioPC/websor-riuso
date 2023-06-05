@@ -98,7 +98,7 @@ class UplMedia extends \yii\db\ActiveRecord
     {
 
         $mimeType = FileHelper::getMimeType($file->tempName, null, false);
-        if(!in_array($mimeType, $valid_files)) throw new \Exception($error_msg.$mimeType, 1);
+        if(!in_array($mimeType, $valid_files)) throw new \Exception($error_msg."; mime type file inviato: ".$mimeType, 1);
 
         $request = new yii\web\Request;
         // carico il file

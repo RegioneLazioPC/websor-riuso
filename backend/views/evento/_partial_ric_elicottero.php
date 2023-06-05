@@ -39,6 +39,16 @@ $js = "
                     language: \"it\",
                     autoclose: true
                 });
+                jQuery(\"#richiestaelicottero-date_arrivo_stimato\").kvDatepicker({
+                    format: \"dd-mm-yyyy\",
+                    language: \"it\",
+                    autoclose: true
+                });
+                jQuery(\"#richiestaelicottero-date_atterraggio\").kvDatepicker({
+                    format: \"dd-mm-yyyy\",
+                    language: \"it\",
+                    autoclose: true
+                });
         });
     })
 
@@ -59,7 +69,7 @@ $this->registerJs($js, $this::POS_READY);
 $heading = '<h3 class="panel-title"><i class="fas fa-list"></i>  '.Html::encode('Lista richieste elicotteri').'</h3>';
 
 
-if(Yii::$app->user->can('createRichiestaElicottero')) $heading .= Html::button(
+if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('createRichiestaElicottero')) $heading .= Html::button(
                 '<i class="glyphicon glyphicon-plus"></i> Nuova richiesta elicottero',
                 [
                     'title' => Yii::t('app', 'Nuova richiesta Elicottero'),
@@ -86,6 +96,12 @@ if(Yii::$app->user->can('createRichiestaElicottero')) $heading .= Html::button(
     'pjaxSettings'=>[
         'neverTimeout'=> true,
     ],
+    'rowOptions'=>function($model){
+        $class = null;
+        
+        if($model->deleted == 1) $class = ['class' => 'red-td'];
+        return $class;
+    },
     'columns' => [
         [
             'attribute' => 'created_at',
@@ -154,7 +170,7 @@ if(Yii::$app->user->can('createRichiestaElicottero')) $heading .= Html::button(
             'format' => 'raw',
             'value' => function($data){
                 $just_sent = !empty( $data->id_anagrafica_funzionario ) ? " Mail inviata" : "";
-                return (Yii::$app->user->can('sendRichiestaElicotteroToCOAU') && 
+                return ( $this->context->action->id == 'gestione-evento' && Yii::$app->user->can('sendRichiestaElicotteroToCOAU') && 
                     $data->engaged ) ? Html::button(
                     'Scheda COAU',
                     [
@@ -163,21 +179,34 @@ if(Yii::$app->user->can('createRichiestaElicottero')) $heading .= Html::button(
                         'class' => 'schedaCoau btn btn-info btn-xs',
                         'style' => 'margin-left: 12px'
                     ]
-                ) . " " . $just_sent : "";
+                ) . " " . $just_sent : "".$just_sent;
             }
         ],
         [
             'class' => 'yii\grid\ActionColumn',
-            'template'=>'{update}',
+            'template'=>'{update} {annullate}',
             'buttons' => [
                 'update' => function ($url, $model) {
-                    return (Yii::$app->user->can('updateRichiestaElicottero') || Yii::$app->user->can('updatePartialRichiestaElicottero')) ? Html::a('<span class="fa fa-pencil"></span>&nbsp;&nbsp;',
+                    $icon = $model->deleted == 1 ? 'fa-eye' : 'fa-pencil';
+                    return ( $this->context->action->id == 'gestione-evento' &&  (Yii::$app->user->can('updateRichiestaElicottero') || Yii::$app->user->can('updatePartialRichiestaElicottero')) ) ? Html::a('<span class="fa '. $icon .'"></span>&nbsp;&nbsp;',
                         '#',
                         [
                             'title' => Yii::t('app', 'Gestione richiesta elicottero'),
                             'data-toggle'=>'tooltip',
                             'class' => 'updateElicottero',
                             'location' => 'update-elicottero?id='.$model->id
+                        ]) : "";
+                },
+                'annullate' => function ($url, $model) {
+                    return ($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('annullateRichiestaElicottero') && !$model->engaged && $model->edited != 1 && $model->deleted != 1) ? Html::a('<span class="fa fa-trash"></span>&nbsp;&nbsp;',
+                        ['evento/annulla-richiesta-elicottero?id='.$model->id],
+                        [
+                            'title' => Yii::t('app', 'Annulla richiesta elicottero'),
+                            'data-toggle'=>'tooltip',
+                            'class' => '',
+                            'data' => [
+                                'confirm' => "Sicuro di voler annullare la richiesta?"
+                            ]
                         ]) : "";
                 },
             ],
@@ -189,9 +218,10 @@ if(Yii::$app->user->can('createRichiestaElicottero')) $heading .= Html::button(
 
 
 <?php
-if(
-    Yii::$app->user->can('updateRichiestaElicottero') || 
-    Yii::$app->user->can('updatePartialRichiestaElicottero')
+if($this->context->action->id == 'gestione-evento' && (
+        Yii::$app->user->can('updateRichiestaElicottero') || 
+        Yii::$app->user->can('updatePartialRichiestaElicottero')
+    )
 ) {
     foreach (
         $ricElicotteroSearchModel->find()
@@ -218,7 +248,7 @@ if(
 
 <?php
 
-if(Yii::$app->user->can('createRichiestaElicottero')) {
+if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('createRichiestaElicottero')) {
     
         Modal::begin([
             'id' => 'modal-ric-elicottero',
@@ -234,8 +264,11 @@ if(Yii::$app->user->can('createRichiestaElicottero')) {
 }
 
 
-if(Yii::$app->user->can('updateRichiestaElicottero') || 
-    Yii::$app->user->can('updatePartialRichiestaElicottero')) :
+if($this->context->action->id == 'gestione-evento' &&  (
+        Yii::$app->user->can('updateRichiestaElicottero') || 
+        Yii::$app->user->can('updatePartialRichiestaElicottero')
+    )
+) :
     // MODAL UPDATE RICH ELICOTTERO
     Modal::begin([
         'id' => 'modal-update-elicottero',

@@ -18,104 +18,109 @@ $comuni = LocComune::find()->where([
                             ])->all();
 
 $is_operatore = ($model->operatore) ? true : false;
-$anagrafica = ($model->utente) ? $model->utente->anagrafica : $model->operatore->anagrafica;
+$anagrafica = (!empty($model->utente)) ? $model->utente->anagrafica : ($is_operatore ? $model->operatore->anagrafica : null);
 
 
 ?>
 
 <div class="utl-utente-form">
 
-    <?php $form = ActiveForm::begin([
-        
-    ]); ?>
-
+    <?php 
+    if(!empty($anagrafica)) {
     
-    <div class="row p20w p20h">
-    	
-	    	<div class="p20h col-xs-12 col-sm-12 col-md-12 col-lg-12 bg-grayLighter box_shadow">
+	    $form = ActiveForm::begin([
+	        
+	    ]); ?>
 
-	    		<?php 
-	    		if(!empty($ana_errors)) :	    			
-	    			foreach ($ana_errors as $error) {
-	    				foreach ($error as $error_message) {
-	    				 	echo '<p class="text-danger">'.Html::encode($error_message).'</p>';
-	    				 } 
-	    			}
-	    		endif;
-	    		?>
-
-	            <?= $form->field($anagrafica, 'nome', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true]) ?>
-
-	            <?= $form->field($anagrafica, 'cognome', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true]) ?>
-
-	            <?= $form->field($anagrafica, 'telefono', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true, 'value' => @$anagrafica->telefono]) ?>
-
-	            <?= $form->field($anagrafica, 'email', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true]) ?>
-
-
-	            <?= $form->field($anagrafica, 'codfiscale', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true]) ?>
-
-
-	            <?= 
-	                $form->field($anagrafica, 'comune_residenza', ['options' => ['class'=>'col-md-3 no-pl']])->widget(Select2::classname(), [
-	                    'data' => ArrayHelper::map( $comuni, 'id', 'comune'),
-	                    'attribute' => 'org_id',
-	                    'options' => [
-	                        'multiple' => false,
-	                        'theme' => 'krajee',
-	                        'placeholder' => 'Cerca comune',
-	                        'language' => 'it-IT',
-	                        'width' => '100%',
-	                    ],
-	                    'pluginOptions' => [
-	                        'allowClear' => true
-	                    ],
-	                ]);
-
-	            ?>
-
-	            
-	            <?php 
-	            	$anagrafica->data_nascita = ($anagrafica->data_nascita) ? 
-	            		Yii::$app->formatter->asDate($anagrafica->data_nascita) : 
-	            		"";
-	            ?>
-	            <?php echo $form->field($anagrafica, 'data_nascita', ['options' => ['class' => 'col-md-3 no-pl']])->widget(DatePicker::classname(), [
-	                    'options' => ['placeholder' => 'Data di nascita ...'],
-	                    'pluginOptions' => [
-	                        'autoclose'=>true,
-	                        'language' => 'it',
-	                        'format' => 'dd-mm-yyyy'
-	                    ],
-	                ]); ?>
-
-	            <?= 
-	                $form->field($anagrafica, 'luogo_nascita', ['options' => ['class'=>'col-md-3 no-pl']])->widget(Select2::classname(), [
-	                    'data' => ArrayHelper::map( LocComune::find()->all(), 'id', 'comune'),
-	                    'attribute' => 'org_id',
-	                    'options' => [
-	                        'multiple' => false,
-	                        'theme' => 'krajee',
-	                        'placeholder' => 'Cerca comune',
-	                        'language' => 'it-IT',
-	                        'width' => '100%',
-	                    ],
-	                    'pluginOptions' => [
-	                        'allowClear' => true
-	                    ],
-	                ]);
-
-	            ?>
-
-	    	</div>
 	    
-    </div>
+	    <div class="row p20w p20h">
+	    	
+		    	<div class="p20h col-xs-12 col-sm-12 col-md-12 col-lg-12 bg-grayLighter box_shadow">
 
-    <div class="form-group m20w ">
-        <?= Html::submitButton('Aggiorna', ['class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary']) ?>
-    </div>
+		    		<?php 
+		    		if(!empty($ana_errors)) :	    			
+		    			foreach ($ana_errors as $error) {
+		    				foreach ($error as $error_message) {
+		    				 	echo '<p class="text-danger">'.Html::encode($error_message).'</p>';
+		    				 } 
+		    			}
+		    		endif;
+		    		?>
 
-    <?php ActiveForm::end(); ?>
+		            <?= $form->field($anagrafica, 'nome', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true]) ?>
+
+		            <?= $form->field($anagrafica, 'cognome', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true]) ?>
+
+		            <?= $form->field($anagrafica, 'telefono', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true, 'value' => @$anagrafica->telefono]) ?>
+
+		            <?= $form->field($anagrafica, 'email', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true]) ?>
+
+
+		            <?= $form->field($anagrafica, 'codfiscale', ['options' => ['class' => 'col-md-3 no-pl']])->textInput(['maxlength' => true]) ?>
+
+
+		            <?= 
+		                $form->field($anagrafica, 'comune_residenza', ['options' => ['class'=>'col-md-3 no-pl']])->widget(Select2::classname(), [
+		                    'data' => ArrayHelper::map( $comuni, 'id', 'comune'),
+		                    'attribute' => 'org_id',
+		                    'options' => [
+		                        'multiple' => false,
+		                        'theme' => 'krajee',
+		                        'placeholder' => 'Cerca comune',
+		                        'language' => 'it-IT',
+		                        'width' => '100%',
+		                    ],
+		                    'pluginOptions' => [
+		                        'allowClear' => true
+		                    ],
+		                ]);
+
+		            ?>
+
+		            
+		            <?php 
+		            	$anagrafica->data_nascita = ($anagrafica->data_nascita) ? 
+		            		Yii::$app->formatter->asDate($anagrafica->data_nascita) : 
+		            		"";
+		            ?>
+		            <?php echo $form->field($anagrafica, 'data_nascita', ['options' => ['class' => 'col-md-3 no-pl']])->widget(DatePicker::classname(), [
+		                    'options' => ['placeholder' => 'Data di nascita ...'],
+		                    'pluginOptions' => [
+		                        'autoclose'=>true,
+		                        'language' => 'it',
+		                        'format' => 'dd-mm-yyyy'
+		                    ],
+		                ]); ?>
+
+		            <?= 
+		                $form->field($anagrafica, 'luogo_nascita', ['options' => ['class'=>'col-md-3 no-pl']])->widget(Select2::classname(), [
+		                    'data' => ArrayHelper::map( LocComune::find()->all(), 'id', 'comune'),
+		                    'attribute' => 'org_id',
+		                    'options' => [
+		                        'multiple' => false,
+		                        'theme' => 'krajee',
+		                        'placeholder' => 'Cerca comune',
+		                        'language' => 'it-IT',
+		                        'width' => '100%',
+		                    ],
+		                    'pluginOptions' => [
+		                        'allowClear' => true
+		                    ],
+		                ]);
+
+		            ?>
+
+		    	</div>
+		    
+	    </div>
+
+	    <div class="form-group m20w ">
+	        <?= Html::submitButton('Aggiorna', ['class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary']) ?>
+	    </div>
+
+	    <?php ActiveForm::end(); 
+	}
+    ?>
 
 
     <?php 

@@ -12,11 +12,11 @@ class m190515_163259_add_everbridge_integration_table extends Migration
      */
     public function safeUp()
     {
-        $this->createTable( 'con_view_rubrica_everbridge_n_record', [
+        $this->createTable('con_view_rubrica_everbridge_n_record', [
             'id' => $this->primaryKey(),
             'identificativo' => $this->string(),
             'n_records' => $this->integer()
-        ] );
+        ]);
 
 
         Yii::$app->db->createCommand("
@@ -38,7 +38,7 @@ class m190515_163259_add_everbridge_integration_table extends Migration
 
 
         $this->dropColumn('mas_single_send', 'id_feedback', $this->string());
-        $this->dropTable('con_view_rubrica_everbridge_pathid');
+        $this->dropTable('con_view_rubrica_everbridge_n_record');
     }
 
     /*

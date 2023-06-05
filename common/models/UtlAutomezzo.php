@@ -30,7 +30,7 @@ use Yii;
  */
 class UtlAutomezzo extends \yii\db\ActiveRecord
 {
-        /**
+    /**
      * @inheritdoc
      */
     public static function tableName()
@@ -58,16 +58,17 @@ class UtlAutomezzo extends \yii\db\ActiveRecord
             [['engaged'], 'default', 'value' => false],
             [['idsquadra', 'idtipo', 'idorganizzazione', 'idsede'], 'default', 'value' => null],
             [['idsquadra', 'idtipo', 'idorganizzazione', 'idsede','ref_id'], 'integer'],
-            [['capacita'], 'number'],
+            [['capacita', 'device_id'], 'number'],
             [['meta'], 'safe'],
             [['targa'], 'string', 'max' => 45],
-            [['classe', 'sottoclasse', 'modello', 'id_sync'], 'string', 'max' => 100],
-            [['disponibilita','tempo_attivazione','allestimento'], 'string', 'max' => 255],
+            [['classe', 'sottoclasse', 'modello' , 'allestimento'], 'safe'],
+            [[ 'id_sync'], 'string', 'max' => 100],
+            [['disponibilita','tempo_attivazione'], 'string', 'max' => 255],
             [['idtipo'], 'exist', 'skipOnError' => true, 'targetClass' => UtlAutomezzoTipo::className(), 'targetAttribute' => ['idtipo' => 'id']],
             [['idsquadra'], 'exist', 'skipOnError' => true, 'targetClass' => UtlSquadraOperativa::className(), 'targetAttribute' => ['idsquadra' => 'id']],
             [['idorganizzazione'], 'exist', 'skipOnError' => true, 'targetClass' => VolOrganizzazione::className(), 'targetAttribute' => ['idorganizzazione' => 'id']],
             [['idsede'], 'exist', 'skipOnError' => true, 'targetClass' => VolSede::className(), 'targetAttribute' => ['idsede' => 'id']],
-            [['idtipo', 'idorganizzazione','targa'],'required']
+            [['idtipo', 'idorganizzazione'],'required']
         ];
     }
 
@@ -92,6 +93,11 @@ class UtlAutomezzo extends \yii\db\ActiveRecord
             'idorganizzazione' => 'Organizzazione',
             'idsede' => 'Sede',
         ];
+    }
+
+    public function extraFields()
+    {
+        return ['tipo'];
     }
 
     /**

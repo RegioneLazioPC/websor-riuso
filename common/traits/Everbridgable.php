@@ -5,7 +5,7 @@ use Yii;
 use common\utils\EverbridgeUtility;
 
 /**
- * Si aggancia ai model per aggiornare il record su everbridge
+ * Trai per la sincronizzazione dei contatti con Everbridge
  */
 trait Everbridgable {
 
@@ -22,7 +22,7 @@ trait Everbridgable {
 	/**
 	 * Usa utility per cancellare gli external id
 	 * poi elimina i record da tabella di relazione
-	 * @return [type] [description]
+	 * @return void
 	 */
 	public function removeFromEverbridge() {
 		if ( Yii::$app->params['sync_everbridge'] ) {
@@ -38,7 +38,7 @@ trait Everbridgable {
 			foreach ($result as $row) {
 				$ext_ids[] = $row['ext_id'];
 			}
-			// se era già cancellata lascia stare
+			
 			if(count($ext_ids) > 0) {
 				EverbridgeUtility::deleteExtIds( array_unique($ext_ids) );
 
@@ -55,7 +55,7 @@ trait Everbridgable {
 
 	/**
 	 * Recupera gli ext_id del model
-	 * @return [type] [description]
+	 * @return array
 	 */
 	public function getExtIds() {
 		$connection = Yii::$app->getDb();

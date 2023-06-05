@@ -4,7 +4,7 @@ use yii\db\Migration;
 
 /**
  * Class m190516_095622_alter_con_everbridge_columns
- * 
+ *
  * ho bisogno di dare al mas anche l'external id per poter avere la notifica sul singolo recapito
  */
 class m190516_095622_alter_con_everbridge_columns extends Migration
@@ -26,14 +26,14 @@ class m190516_095622_alter_con_everbridge_columns extends Migration
             DROP INDEX IF EXISTS unique_identificativo_con_rubrica_everbridge_n_records")
         ->execute();
 
-        $this->dropTable( 'con_view_rubrica_everbridge_n_record');
+        $this->dropTable('con_view_rubrica_everbridge_n_record');
 
-        $this->createTable( 'con_view_rubrica_everbridge_ext_ids', [
+        $this->createTable('con_view_rubrica_everbridge_ext_ids', [
             'id' => $this->primaryKey(),
             'contatto' => $this->string(), // {id_contatto}_{contatto_type}
             'ext_id' => $this->string(),
             'identificativo' => $this->string()
-        ] );
+        ]);
 
         /**
          * Ricreo la vista ma con gli ext_id
@@ -63,8 +63,7 @@ class m190516_095622_alter_con_everbridge_columns extends Migration
             CONCAT(view_rubrica_operatore_pc.tipologia_riferimento, '_', view_rubrica_operatore_pc.id_riferimento) as identificativo, 
             con_view_rubrica_everbridge_ext_ids.ext_id 
             FROM view_rubrica_operatore_pc  LEFT JOIN con_view_rubrica_everbridge_ext_ids ON con_view_rubrica_everbridge_ext_ids.identificativo = CONCAT(view_rubrica_operatore_pc.id_contatto, '_', view_rubrica_operatore_pc.contatto_type)
-            "
-        )->execute();
+            ")->execute();
     }
 
     /**
@@ -72,11 +71,11 @@ class m190516_095622_alter_con_everbridge_columns extends Migration
      */
     public function safeDown()
     {
-        $this->createTable( 'con_view_rubrica_everbridge_n_record', [
+        $this->createTable('con_view_rubrica_everbridge_n_record', [
             'id' => $this->primaryKey(),
             'identificativo' => $this->string(),
             'n_records' => $this->integer()
-        ] );
+        ]);
 
         Yii::$app->db->createCommand("
             CREATE UNIQUE INDEX unique_identificativo_con_rubrica_everbridge_n_records ON con_view_rubrica_everbridge_n_record (
@@ -84,6 +83,8 @@ class m190516_095622_alter_con_everbridge_columns extends Migration
         ->execute();
 
         Yii::$app->db->createCommand("DROP VIEW IF EXISTS view_rubrica")->execute();
+
+        $this->dropTable('con_view_rubrica_everbridge_ext_ids');
 
         Yii::$app->db->createCommand("CREATE VIEW view_rubrica as
             SELECT view_rubrica_strutture.*, 
@@ -110,8 +111,7 @@ class m190516_095622_alter_con_everbridge_columns extends Migration
             CONCAT(view_rubrica_operatore_pc.tipologia_riferimento, '_', view_rubrica_operatore_pc.id_riferimento) as identificativo, 
             con_view_rubrica_everbridge_n_record.n_records 
             FROM view_rubrica_operatore_pc  LEFT JOIN con_view_rubrica_everbridge_n_record ON con_view_rubrica_everbridge_n_record.identificativo = CONCAT(view_rubrica_operatore_pc.tipologia_riferimento, '_', view_rubrica_operatore_pc.id_riferimento)
-            "
-        )->execute();
+            ")->execute();
     }
 
     /*

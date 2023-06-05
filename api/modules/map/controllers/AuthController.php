@@ -74,15 +74,14 @@ class AuthController extends ActiveController
         return $actions;
     }
 
-    /**
-     * Di default per il metodo options torniamo ok in modo da non avere errori not found dalle chiamate automatiche del browser
-     * @return [type] [description]
-     */
-    public function actionOptions() {
+    
+    public function actionOptions()
+    {
         return ['message'=>'ok'];
     }
 
-    public function actionTest(){
+    public function actionTest()
+    {
         return "ciao";
     }
 
@@ -91,14 +90,13 @@ class AuthController extends ActiveController
      * Login
      * @return [type] [description]
      */
-    public function actionLogin() 
+    public function actionLogin()
     {
-        $model = new LoginForm();        
+        $model = new LoginForm();
                 
         $request = Yii::$app->getRequest();
 
         if ($model->load($request->getBodyParams(), '') && $model->login()) :
-
             $request = new yii\web\Request;
             $ip = $request->getUserIP();
             $agent = $request->getUserAgent();
@@ -112,19 +110,19 @@ class AuthController extends ActiveController
             ->setIssuedAt(time()) // Configures the time that the token was issue (iat claim)
             ->setNotBefore(time()) // Configures the time before which the token cannot be accepted (nbf claim)
             ->setExpiration(time() + (3600*24)) // Configures the expiration time of the token (exp claim)
-            ->set( 'uid', Yii::$app->user->identity->id ) // Configures a new claim, called "uid"
-            ->set( 'ip', $ip )
-            ->set( 'agent', $agent )
+            ->set('uid', Yii::$app->user->identity->id) // Configures a new claim, called "uid"
+            ->set('ip', $ip)
+            ->set('agent', $agent)
             ->sign($signer, Yii::$app->params['secret-key'])
             ->getToken(); // Retrieves the generated token
 
             $user = User::findOne(Yii::$app->user->identity->id);
+            Yii::$app->user->identity = $user;
+            \common\models\app\AppAccessLog::addLogElement('Login', []);
             $permissions = Yii::$app->authManager->getPermissionsByUser(Yii::$app->user->identity->id);
             return [ 'token' => "" . $token, 'user' => $user, 'permissions' => $permissions ];
-
-
         else :
-            ResponseError::returnMultipleErrors( 422, $model->getErrors() );     
+            ResponseError::returnMultipleErrors(422, $model->getErrors());
         endif;
     }
 
@@ -132,12 +130,10 @@ class AuthController extends ActiveController
      * Profilo utente con permessi
      * @return [type] [description]
      */
-    public function actionProfile () {
+    public function actionProfile()
+    {
         $user = User::findOne(Yii::$app->user->identity->id);
         $permissions = Yii::$app->authManager->getPermissionsByUser(Yii::$app->user->identity->id);
         return [ 'user' => $user, 'permissions' => $permissions ];
     }
-
-    
-
 }

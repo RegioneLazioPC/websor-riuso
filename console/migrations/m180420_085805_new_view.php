@@ -14,7 +14,7 @@ class m180420_085805_new_view extends Migration
      */
     public function safeUp()
     {
-        Yii::$app->db->createCommand("DROP VIEW geo_datas")
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS geo_datas")
             ->execute();
 
         Yii::$app->db->createCommand("CREATE VIEW geo_datas AS 
@@ -77,7 +77,6 @@ class m180420_085805_new_view extends Migration
                 LEFT JOIN loc_provincia ON loc_provincia.id = loc_comune.id_provincia
         ")
         ->execute();
-        
     }
 
     /**
@@ -85,7 +84,7 @@ class m180420_085805_new_view extends Migration
      */
     public function safeDown()
     {
-        Yii::$app->db->createCommand("DROP VIEW geo_datas")
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS geo_datas")
             ->execute();
 
 

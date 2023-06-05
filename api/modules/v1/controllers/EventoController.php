@@ -22,7 +22,7 @@ class EventoController extends ActiveController
     {
         $behaviors = parent::behaviors();
         $behaviors['authenticator'] = [
-            'class' => JwtHttpBearerAuth::class,
+            'class' => \api\utils\Authenticator::class,
             'except' => ['login','options']
         ];
 
@@ -48,7 +48,7 @@ class EventoController extends ActiveController
             'query' => UtlEvento::find()
             ->where(['!=', 'stato', 'Chiuso'])
             ->andWhere(['is_public' => 1])
-            ->joinWith('utl_tipologia as tipo')
+            ->joinWith('tipologia as tipo')
             ->andWhere('tipo.check_app = 1'),
             'pagination'=> false
         ]);

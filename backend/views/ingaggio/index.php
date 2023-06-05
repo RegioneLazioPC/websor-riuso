@@ -1,7 +1,7 @@
 <?php
 
 use yii\helpers\Html;
-use yii\grid\GridView;
+use kartik\grid\GridView;
 
 /* @var $this yii\web\View */
 /* @var $searchModel common\models\UtlIngaggioSearch */
@@ -12,13 +12,15 @@ $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="utl-ingaggio-index">
 
-    <h1><?= Html::encode($this->title) ?></h1>
     
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'perfectScrollbar' => true,
         'perfectScrollbarOptions' => [],
+        'panel' => [
+            'heading'=>'<h2 class="panel-title"><i class="glyphicon glyphicon-bell"></i> '.Html::encode($this->title).'</h2>',
+        ],
         'columns' => [
             ['class' => 'yii\grid\SerialColumn'],
             'id',

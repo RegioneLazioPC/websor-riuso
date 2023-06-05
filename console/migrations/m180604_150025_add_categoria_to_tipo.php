@@ -32,7 +32,6 @@ class m180604_150025_add_categoria_to_tipo extends Migration
             'id',
             'CASCADE'
         );
-
     }
 
     /**
@@ -51,7 +50,7 @@ class m180604_150025_add_categoria_to_tipo extends Migration
         );
 
         $this->dropColumn('utl_aggregatore_tipologie', 'id_categoria');
-        $this->dropColumn('utl_categoria_automezzo_attrezzatura', 'id_evento');
+        $this->dropColumn('utl_categoria_automezzo_attrezzatura', 'id_tipo_evento');
     }
 
     /*

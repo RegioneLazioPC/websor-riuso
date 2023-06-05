@@ -65,6 +65,8 @@ class UtlTipologia extends \yii\db\ActiveRecord
             [['idparent','check_app'], 'integer'],
             [['icon_date'], 'safe'],
             [['tipologia'], 'string', 'max' => 255],
+            [['cap_category'],'string'],
+            [['valido_dal', 'valido_al'], 'date', 'format'=>'php:Y-m-d']
         ];
     }
 
@@ -73,14 +75,18 @@ class UtlTipologia extends \yii\db\ActiveRecord
         if ($this->validate()) {
 
 
-            $file_path = Yii::getAlias('@backend/web/images');
-            if(!file_exists($file_path)) mkdir($file_path);
-            if(!file_exists($file_path.'/markers')) mkdir($file_path.'/markers');
+            if($this->icon) {
+                $file_path = Yii::getAlias('@backend/web/images');
+                if(!file_exists($file_path)) mkdir($file_path);
+                if(!file_exists($file_path.'/markers')) mkdir($file_path.'/markers');
 
-            $this->icon->saveAs($file_path.'/markers/' . $this->icon->baseName . '.' . $this->icon->extension);
-            $this->icon_name = $this->icon->baseName . '.' . $this->icon->extension;
-            $this->icon = null;
-            return true;
+                $this->icon->saveAs($file_path.'/markers/' . $this->icon->baseName . '.' . $this->icon->extension);
+                $this->icon_name = $this->icon->baseName . '.' . $this->icon->extension;
+                $this->icon = null;
+                return true;
+            } else {
+                return true;
+            }
 
         } else {
             return false;

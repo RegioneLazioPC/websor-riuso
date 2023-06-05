@@ -30,23 +30,48 @@ $(document).on('click', '.popupIngaggiModal', function(e) {
     e.preventDefault();
     $('#modal-ingaggio').modal('show');
 });
+
+$(document).on('click', '.modalSchieramento', function(e) { 
+    e.preventDefault();
+    $('#modal-add-resource').modal('show')
+        .find('#modalContent')
+        .load($(this).attr('value'));
+    document.getElementById('modalAddHeader').innerHTML = '<h2>' + $(this).attr('title') + '</h2>';
+});
 ";
 
 $this->registerJs($js, $this::POS_READY);
 
 $heading = '<h3 class="panel-title"><i class="fas fa-list"></i>  '.Html::encode('Lista attivazioni').'</h3>';
 
-if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('createIngaggio')) :
-    $heading .= Html::button(
-                            '<i class="glyphicon glyphicon-plus"></i> Nuova attivazione',
-                            [
-                                'title' => Yii::t('app', 'Aggiungi intervento'),
-                                'class' => 'popupIngaggiModal btn btn-success',
-                            ]
-                        );
+if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('createIngaggio')) {
 
-    $heading .= '<span class="carto-link">'. Html::a('Cartografia', ['/sistema-cartografico?evt='.$model->id], ['class' => 'btn btn-warning','style'=>'margin-left: 10px']).'</span>';
-endif;
+    if(Yii::$app->user->can('createIngaggio')) {
+        $heading .= Html::button(
+            '<i class="glyphicon glyphicon-plus"></i> Nuova attivazione',
+            [
+                'title' => Yii::t('app', 'Aggiungi intervento'),
+                'class' => 'popupIngaggiModal btn btn-success',
+            ]
+        );
+    }
+
+    if(Yii::$app->user->can('activateSchieramento')) {
+        $heading .= Html::button(
+            '<i class="glyphicon glyphicon-plus"></i> Attiva da schieramento',
+            [
+                'title' => Yii::t('app', 'Attiva da schieramento'),
+                'class' => 'modalSchieramento btn btn-success',
+                'style' => 'margin-right: 20px; margin-left: 20px;',
+                'value' => Url::toRoute(['evento/schieramento-list', 'id' => $model->id])
+            ]
+        );
+    }
+
+    if(Yii::$app->FilteredActions->showCartografico) {
+        $heading .= '<span class="carto-link">'. Html::a('Cartografia', ['/sistema-cartografico?evt='.$model->id], ['class' => 'btn btn-warning','style'=>'margin-left: 10px']).'</span>';
+    }
+}
 
 $evento = $model;
 ?>
@@ -79,7 +104,18 @@ $evento = $model;
             return ['class'=>$model->getStatoColor().'-td'];
         },
     'columns' => [
-        
+        [
+            'attribute' => 'rl_feedback_to_check',
+            'filter' => false,
+            'label' => '',
+            'format' => 'raw',
+            'contentOptions' => ['style'=>'width: 20px;'],
+            'value' => function($data){
+                if($data->rl_feedback_to_check == 1) return '<span class="fas fa-exclamation-triangle m5w text-danger" title="Feedback del RL non visualizzato" data-toggle="tooltip"></span>';
+
+                return '';
+            }
+        ],
         [
             'attribute' => 'created_at',
             'label' => 'Creazione',
@@ -90,7 +126,7 @@ $evento = $model;
             'label' => 'Mezzo',
             'attribute' => 'automezzo.tipo.descrizione',
             'contentOptions' => ['style'=>'width: 150px; white-space: unset;'],
-            'filter'=> Html::activeDropDownList($ingaggiSearchModel, 'automezzo.tipo.descrizione', ArrayHelper::map(UtlAutomezzoTipo::find()->all(), 'id', 'descrizione'), 
+            'filter'=> Html::activeDropDownList($ingaggiSearchModel, 'automezzo.tipo.descrizione', ArrayHelper::map(UtlAutomezzoTipo::find()->orderBy(['descrizione'=>SORT_ASC])->all(), 'id', 'descrizione'), 
                 ['class' => 'form-control','prompt' => 'Tutti']),
             'value' => function($data){
                 if(!empty($data->automezzo)){
@@ -102,7 +138,7 @@ $evento = $model;
             'label' => 'Attrezzatura',
             'attribute' => 'attrezzatura.tipo.descrizione',
             'contentOptions' => ['style'=>'width: 150px; white-space: unset;'],
-            'filter'=> Html::activeDropDownList($ingaggiSearchModel, 'attrezzatura.tipo.descrizione', ArrayHelper::map(UtlAttrezzaturaTipo::find()->all(), 'id', 'descrizione'), 
+            'filter'=> Html::activeDropDownList($ingaggiSearchModel, 'attrezzatura.tipo.descrizione', ArrayHelper::map(UtlAttrezzaturaTipo::find()->orderBy(['descrizione'=>SORT_ASC])->all(), 'id', 'descrizione'), 
                 ['class' => 'form-control','prompt' => 'Tutti']),
             'value' => function($data){
                 if(!empty($data->attrezzatura)){
@@ -137,6 +173,7 @@ $evento = $model;
             'attribute' => 'stato',
             'format' => 'raw',
             'contentOptions' => ['style'=>'width: 200px; white-space: unset;'],
+            'filter'=> Html::activeDropDownList($ingaggiSearchModel, 'stato', UtlIngaggio::getStati(), ['class' => 'form-control','prompt' => 'Tutti']), 
             'value' => function($data){
                 if($data->stato != 2) return $data->getStato();
 
@@ -204,6 +241,23 @@ $add_model->id_evento = $model->id;
 $add_model->lat = $model->lat;
 $add_model->lon = $model->lon;
 
-echo Yii::$app->controller->renderPartial('_form_ingaggio', ['model'=> $add_model]);
+echo Yii::$app->controller->renderPartial('_form_ingaggio', ['model'=> $add_model, 'evento'=>$evento]);
 Modal::end();
+?>
+
+<?php
+
+Modal::begin([
+    'id' => 'modal-add-resource',
+    'headerOptions' => ['id' => 'modalAddHeader'],
+    'size' => 'modal-lg',
+    'options' => [
+        'class' => 'ultra-large-modal'
+    ]
+]);
+
+    echo "<div id='modalContent'></div>";
+    
+Modal::end();
+
 ?>

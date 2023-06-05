@@ -21,7 +21,7 @@ class m180510_131326_add_segnalazione_geom extends Migration
      */
     public function safeDown()
     {
-        Yii::$app->db->createCommand("ALTER TABLE vol_sede DROP COLUMN geom")
+        Yii::$app->db->createCommand("ALTER TABLE utl_segnalazione DROP COLUMN geom")
             ->execute();
     }
 

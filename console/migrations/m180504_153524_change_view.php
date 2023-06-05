@@ -12,7 +12,7 @@ class m180504_153524_change_view extends Migration
      */
     public function safeUp()
     {
-        Yii::$app->db->createCommand("DROP VIEW geo_datas")
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS geo_datas")
             ->execute();
 
         Yii::$app->db->createCommand("CREATE VIEW geo_datas AS 
@@ -85,7 +85,7 @@ class m180504_153524_change_view extends Migration
      */
     public function safeDown()
     {
-        Yii::$app->db->createCommand("DROP VIEW geo_datas")
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS geo_datas")
             ->execute();
 
         Yii::$app->db->createCommand("CREATE VIEW geo_datas AS 

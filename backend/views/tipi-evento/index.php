@@ -32,6 +32,11 @@ $this->params['breadcrumbs'][] = $this->title;
 
             'id',
             'tipologia',
+            [
+                'label'=>'Categoria messaggio cap',
+                'attribute'=>'cap_category',
+                'filter'=> Html::activeDropDownList($searchModel, 'cap_category', \common\models\cap\CapExposedMessage::getDropdownCategories(), ['class' => 'form-control','prompt' => 'Tutti']),
+            ],
             [   'label' => 'Genitore',
                 'attribute' => 'idparent',
                 'filter'=> Html::activeDropDownList($searchModel, 'idparent', ArrayHelper::map(UtlTipologia::find()->where('idparent is null')->asArray()->all(), 'id', 'tipologia'), ['class' => 'form-control','prompt' => 'Tutti']),

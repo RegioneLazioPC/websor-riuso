@@ -109,6 +109,10 @@ $this->params['breadcrumbs'][] = $this->title;
             ]            
         ];
 
+        echo $this->render('_export_pdf', [
+            'cols' => $cols
+        ]);
+
         ?>
 
        <?php echo GridView::widget([

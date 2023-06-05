@@ -115,7 +115,8 @@ class IngaggiController extends ActiveController
                     f.* 
                     FROM 
                     pgr_dijkstracost( 'SELECT gid as id, source, target, length_m as cost FROM routing.osm_ways'::text, 
-                        ( SELECT vert.id FROM routing.osm_ways_vertices_pgr vert 
+                        ( SELECT vert.id FROM routing.osm_ways_vertices_pgr vert
+                            WHERE vert.main_network = true 
                             ORDER BY (vert.the_geom::geography <-> (SELECT geom FROM point_selected)::geography) LIMIT 1 
                         ), 
                         ARRAY( SELECT nvf.id_vert FROM view_routing_organizzazioni nvf ), 

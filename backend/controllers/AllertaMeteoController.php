@@ -38,7 +38,7 @@ use yii\web\Response;
 use yii\helpers\Url;
 
 /**
- * AllertaMeteoController implements the CRUD actions for AlmAllertaMeteo model.
+ * AllertaMeteoController
  */
 class AllertaMeteoController extends Controller
 {
@@ -57,9 +57,9 @@ class AllertaMeteoController extends Controller
             'access' => [
                 'class' => \yii\filters\AccessControl::className(),
                 'denyCallback' => function ($rule, $action) {
-                    if(Yii::$app->user){
+                    if (Yii::$app->user) {
                         Yii::error("Tentativo di accesso non autorizzato automezzo user: ".Yii::$app->user->getId());
-                        Yii::$app->user->logout();                        
+                        Yii::$app->user->logout();
                     }
                     return $this->redirect(Yii::$app->urlManager->createUrl('site/login'));
                 },
@@ -89,7 +89,7 @@ class AllertaMeteoController extends Controller
                         'actions' => ['zone-allerta'],
                         'permissions' => ['Admin']
                     ]
-                ]        
+                ]
             ]
         ];
     }
@@ -146,14 +146,15 @@ class AllertaMeteoController extends Controller
     {
         $model = new AlmAllertaMeteo();
 
-        if(Yii::$app->request->method == 'POST') {
+        if (Yii::$app->request->method == 'POST') {
             $conn = \Yii::$app->db;
             $dbTrans = $conn->beginTransaction();
             try {
                 $data = Yii::$app->request->post();
                 
                 $data['AlmAllertaMeteo']['data_allerta'] = \DateTime::createFromFormat(
-                    'd-m-Y', $data['AlmAllertaMeteo']['data_allerta']
+                    'd-m-Y',
+                    $data['AlmAllertaMeteo']['data_allerta']
                 )->format('Y-m-d');
                 if ($model->load($data) && $model->save()) {
                     $file = UploadedFile::getInstance($model, 'mediaFile');
@@ -238,7 +239,7 @@ class AllertaMeteoController extends Controller
 
 
 
-    public function actionSendAllerta( )
+    public function actionSendAllerta()
     {
         
         $model = new AlmAllertaMeteo;
@@ -249,9 +250,7 @@ class AllertaMeteoController extends Controller
          * crea un'allerta completa con tutti i destinatari
          * @var [type]
          */
-        if(Yii::$app->request->method == 'POST') 
-        {
-            
+        if (Yii::$app->request->method == 'POST') {
             $conn = \Yii::$app->db;
             $dbTrans = $conn->beginTransaction();
             
@@ -259,14 +258,17 @@ class AllertaMeteoController extends Controller
                 $data = Yii::$app->request->post();
                 
                 $data['AlmAllertaMeteo']['data_allerta'] = \DateTime::createFromFormat(
-                    'd-m-Y', $data['AlmAllertaMeteo']['data_allerta']
+                    'd-m-Y',
+                    $data['AlmAllertaMeteo']['data_allerta']
                 )->format('Y-m-d');
 
-                $zone = array_map(function($z) { return $z->code; } , AlmZonaAllerta::find()->orderBy(['code'=>SORT_ASC])->all() );
+                $zone = array_map(function ($z) {
+                    return $z->code;
+                }, AlmZonaAllerta::find()->orderBy(['code'=>SORT_ASC])->all());
                 $zone_data = [];
                 foreach ($zone as $codice_zona) {
-                    if(isset($data['AlmAllertaMeteo']['zone_allerta_array'][$codice_zona]) &&
-                        $data['AlmAllertaMeteo']['zone_allerta_array'][$codice_zona] == 1){
+                    if (isset($data['AlmAllertaMeteo']['zone_allerta_array'][$codice_zona]) &&
+                        $data['AlmAllertaMeteo']['zone_allerta_array'][$codice_zona] == 1) {
                         $zone_data[] = $codice_zona;
                     }
                 }
@@ -278,29 +280,27 @@ class AllertaMeteoController extends Controller
                 $files = UploadedFile::getInstances($model, 'mediaFile');
                 $messaggio->load(Yii::$app->request->post());
 
-                if( empty($files) || !$files ) throw new \Exception("Inserisci un file", 1);
+                if (empty($files) || !$files) {
+                    throw new \Exception("Inserisci un file", 1);
+                }
                 
-                if ( $model->save() ) {                    
-                    
+                if ($model->save()) {
                     $tipo = \common\models\UplTipoMedia::find()->where(
                         ['descrizione'=>'Allerta meteo']
                     )->one();
                     
 
-                    foreach($files as $file) {
-
+                    foreach ($files as $file) {
                         $media = new \common\models\UplMedia;
                         $media->uploadFile($file, $tipo->id, MasMessage::validAllertaMimes());
                         $media->refresh();
 
                         $model->link('file', $media);
-                        
                     }
                     
                     $messaggio->load(Yii::$app->request->post());
                     $messaggio->id_allerta = $model->id;
-                    if($messaggio->save()) {
-                        
+                    if ($messaggio->save()) {
                         $invio = new MasInvio;
                         $invio->id_message = $messaggio->id;
                         $invio->channel_mail = $messaggio->channel_mail;
@@ -310,8 +310,17 @@ class AllertaMeteoController extends Controller
                         $invio->channel_fax = $messaggio->channel_fax;
                         $invio->data_invio = date("Y-m-d H:m:s", time());
 
-                        if(!$invio->save()) throw new \Exception("Dati invio non validi");
+                        if (!$invio->save()) {
+                            throw new \Exception("Dati invio non validi");
+                        }
 
+                        if (isset(Yii::$app->params['mas_version']) && Yii::$app->params['mas_version'] == 2) {
+                            $id_message_mas = \common\utils\MasV2Dispatcher::createMessage($messaggio, $invio);
+                            $invio->mas_ref_id = (string) $id_message_mas;
+                            if (!$invio->save()) {
+                                throw new \Exception("Errore creazione messaggio", 1);
+                            }
+                        }
                         /**
                          * @todo  from here
                          */
@@ -321,18 +330,13 @@ class AllertaMeteoController extends Controller
                             'id_invio' => $invio->id,
                             'redirect_url' => Url::to(['mas/view-invio', 'id_invio' => $invio->id])
                         ];
-
-                        
                     }
-
-                } 
-                
-
+                }
             } catch (\Exception $e) {
                 $dbTrans->rollBack();
                 Yii::$app->session->setFlash('error', $e->getMessage());
                 
-                if(Yii::$app->request->method == 'POST'){
+                if (Yii::$app->request->method == 'POST') {
                     Yii::$app->response->format = Response::FORMAT_JSON;
                     return ['error'=>$e->getMessage()];
                 } else {
@@ -355,13 +359,16 @@ class AllertaMeteoController extends Controller
      * @param  [type] $id_template [description]
      * @return [type]              [description]
      */
-    public function actionModalPreview( ) {
+    public function actionModalPreview()
+    {
 
         $id_template = Yii::$app->request->post('id_template');
         $channel = Yii::$app->request->post('channel');
         
         $template = null;
-        if(!empty($id_template)) $template = MasMessageTemplate::findOne($id_template);
+        if (!empty($id_template)) {
+            $template = MasMessageTemplate::findOne($id_template);
+        }
 
         $model = new MasMessage;
         
@@ -378,7 +385,8 @@ class AllertaMeteoController extends Controller
      * Prendi zone di allerta
      * @return [type] [description]
      */
-    public function actionGetZone() {
+    public function actionGetZone()
+    {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $zone_geo_json = AlmZonaAllerta::find()->select(['code',
@@ -401,7 +409,9 @@ class AllertaMeteoController extends Controller
         $zn_c = [];
 
         foreach ($zone_geo_json as $zona) {
-            if(!isset($zn_c[$zona['code']])) $zn_c[$zona['code']] = [];
+            if (!isset($zn_c[$zona['code']])) {
+                $zn_c[$zona['code']] = [];
+            }
 
             $zn_c[$zona['code']][] = $zona['geojson'];
         }

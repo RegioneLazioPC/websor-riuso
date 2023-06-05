@@ -15,6 +15,9 @@ use common\models\UtlAutomezzoTipo;
 use common\models\UtlAttrezzatura;
 use common\models\UtlAttrezzaturaTipo;
 use common\models\UtlSegnalazione;
+use common\models\UtlEvento;
+
+use yii\db\Migration;
 
 class UpdateController extends Controller {
 	
@@ -539,5 +542,587 @@ class UpdateController extends Controller {
         }
     }
 
+    /**
+     * Aggiorna messaggi CAP mettendo expire
+     * 
+     * @return [type] [description]
+     */
+    public function actionAddCapExpires(){
+        Yii::$app->db->createCommand(
+            "UPDATE cap_messages SET expires = (json_content->'info'->>'expires')::TIMESTAMP"
+        )->execute();
+    }
+
+    protected $migrate = null;
+    private function normalize( $str ) {
+        return preg_replace("/[^a-zA-Z0-9]/", "_", strtolower( $str ) );
+    }
+
+    public function actionImportRecupero($commit = 0) {
+        
+        $trans = Yii::$app->db->beginTransaction();
+
+        $file = __DIR__ . '/../data/websor_recupero_dati/organizzazione.xlsx';
+
+        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile( $file );
+        $reader->setReadDataOnly(true);
+
+        $worksheet = $reader->load( $file );
+        $worksheet->setActiveSheetIndex( 0 );
+
+        $data = $worksheet->getActiveSheet()->toArray(null, false, true, false);
+        $n_row = 0;
+
+        $row_cols = [];
+        $datas = [];
+        $cols = [];
+
+        $current_numero_regionale = null;
+        $list_numeri_regionali_da_non_toccare = []; // qui ci mettiamo quelli ce non vanno messi non attivi
+        
+        $indicizzazione_specializzazioni = [];
+
+        foreach ($data as $row) {
+            // prima riga la escludiamo
+            if($n_row == 0) {
+                $n_row++;
+
+                // specializzazioni 
+                // da 54 - 70
+                for($n = 54; $n <= 70; $n++) {
+                    
+                    $nome_specializzazione = $row[$n];
+                    $spec = \common\models\TblSezioneSpecialistica::find()->where(['descrizione'=>$row[$n]])->one();
+
+                    if(!$spec) {
+                        echo "SPECIALIZZAZIONE NON PRESENTE: " . $row[$n] . "\n";
+                        $spec = new \common\models\TblSezioneSpecialistica();
+                        $spec->descrizione = $row[$n];
+                        $spec->save();
+                    }
+
+                    $indicizzazione_specializzazioni[$n] = $spec;
+
+                }
+
+                continue;
+            }     
+
+            if(!empty($row[0])) {
+                
+                $current_numero_regionale = $row[0];
+                $list_numeri_regionali_da_non_toccare[] = $row[0];
+
+                $odv = \common\models\VolOrganizzazione::find()->where(['ref_id'=>$current_numero_regionale])->one();
+                if(!$odv) {
+
+                    $odv = new \common\models\VolOrganizzazione();
+                    $odv->ref_id = $current_numero_regionale;
+
+                    echo "ODV NON PRESENTE: " . $row[5] . "\n";
+                    
+                }
+
+
+                $odv->stato_iscrizione = $row[4] == 'Attiva' ? 3 : 4;
+                $odv->denominazione = $row[5];
+                $odv->codicefiscale = preg_replace("/[^0-9]/", "", $row[7]);
+                $odv->partita_iva = (!empty($row[6])) ? preg_replace("/[^0-9]/", "", $row[6]) : preg_replace("/[^0-9]/", "", $row[7]);
+
+                // rappr. legale 9 - 10
+                $odv->nome_responsabile = $row[9] . " " . $row[10];
+                $odv->cf_rappresentante_legale = $row[11];
+                $odv->num_albo_regionale = $row[30];
+                if(!empty($row[31])){
+                    $dt = \DateTime::createFromFormat("d/m/Y", $row[31]);
+                    if(!is_bool($dt)) $odv->data_albo_regionale = $dt->format('Y-m-d');
+                }
+
+                $odv->save();
+
+                
+
+                Yii::$app->db->createCommand("DELETE FROM con_organizzazione_sezione_specialistica WHERE id_organizzazione = :id_odv", [ ':id_odv'=>$odv->id ])->execute();
+                
+                // verifica specializzazioni
+                for($n = 54; $n <= 70; $n++) {
+
+                    if(trim($row[$n]) == 'x') {
+                        
+                        $connessione = new \common\models\ConOrganizzazioneSezioneSpecialistica;
+                        $connessione->id_sezione_specialistica = $indicizzazione_specializzazioni[$n]->id;
+                        $connessione->id_organizzazione = $odv->id;
+                        $connessione->save();
+
+                    }
+                }
+
+                $id_recapiti_da_non_toccate = [];
+
+                // recapiti messaggistica ODV
+                // email -> $row[12] 0
+                // pec -> $row[13] 1
+                // tel -> $row[14] 2
+                // fax -> $row[15] 3
+                // telh24 -> $row[16] 4
+                // faxh24 -> $row[17] 5
+                if(!empty($row[12])) {
+                    $recapiti = explode(";", $row[12]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_MESSAGGISTICA, 0);
+                        }
+                    }       
+                }
+
+                if(!empty($row[13])) {
+                    $recapiti = explode(";", $row[13]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_MESSAGGISTICA, 1);
+                        }
+                    }       
+                }
+
+                if(!empty($row[14])) {
+                    $recapiti = explode(";", $row[14]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_MESSAGGISTICA, 2);
+                        }
+                    }       
+                }
+
+                if(!empty($row[15])) {
+                    $recapiti = explode(";", $row[15]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_MESSAGGISTICA, 3);
+                        }
+                    }       
+                }
+
+                if(!empty($row[16])) {
+                    $recapiti = explode(";", $row[16]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_MESSAGGISTICA, 4);
+                        }
+                    }       
+                }
+
+                if(!empty($row[17])) {
+                    $recapiti = explode(";", $row[17]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_MESSAGGISTICA, 5);
+                        }
+                    }       
+                }
+
+
+
+
+                // recapiti attivazioni
+                // email -> $row[18]
+                // pec -> $row[19]
+                // tel -> $row[20]
+                // fax -> $row[21]
+                // telh24 -> $row[22]
+                // faxh24 -> $row[23]
+                if(!empty($row[18])) {
+                    $recapiti = explode(";", $row[18]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_INGAGGIO, 0);
+                        }
+                    }       
+                }
+
+                if(!empty($row[19])) {
+                    $recapiti = explode(";", $row[19]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_INGAGGIO, 1);
+                        }
+                    }       
+                }
+
+                if(!empty($row[20])) {
+                    $recapiti = explode(";", $row[20]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_INGAGGIO, 2);
+                        }
+                    }       
+                }
+
+                if(!empty($row[21])) {
+                    $recapiti = explode(";", $row[21]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_INGAGGIO, 3);
+                        }
+                    }       
+                }
+
+                if(!empty($row[22])) {
+                    $recapiti = explode(";", $row[22]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_INGAGGIO, 4);
+                        }
+                    }       
+                }
+
+                if(!empty($row[23])) {
+                    $recapiti = explode(";", $row[23]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_INGAGGIO, 5);
+                        }
+                    }       
+                }
+
+
+                // recapiti allertamenti
+                // email -> $row[24]
+                // pec -> $row[25]
+                // tel -> $row[26]
+                // fax -> $row[27]
+                // telh24 -> $row[28]
+                // faxh24 -> $row[29]
+                if(!empty($row[24])) {
+                    $recapiti = explode(";", $row[24]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_ALLERTA, 0);
+                        }
+                    }       
+                }
+
+                if(!empty($row[25])) {
+                    $recapiti = explode(";", $row[25]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_ALLERTA, 1);
+                        }
+                    }       
+                }
+
+                if(!empty($row[26])) {
+                    $recapiti = explode(";", $row[26]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_ALLERTA, 2);
+                        }
+                    }       
+                }
+
+                if(!empty($row[26])) {
+                    $recapiti = explode(";", $row[26]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_ALLERTA, 3);
+                        }
+                    }       
+                }
+
+                if(!empty($row[27])) {
+                    $recapiti = explode(";", $row[27]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_ALLERTA, 4);
+                        }
+                    }       
+                }
+
+                if(!empty($row[28])) {
+                    $recapiti = explode(";", $row[28]);
+                    if(count($recapiti) > 0) {
+                        foreach ($recapiti as $recapito) {
+                            $id_recapiti_da_non_toccate[] = $this->saveContattoOdv($odv, $recapito, \common\models\organizzazione\ConOrganizzazioneContatto::TIPO_ALLERTA, 5);
+                        }
+                    }       
+                }
+
+                $to_delete = \common\models\organizzazione\ConOrganizzazioneContatto::find()->where([
+                    'id_organizzazione'=>$odv->id
+                ])->andWhere(['not in', 'id', $id_recapiti_da_non_toccate])
+                ->all();
+                foreach ($to_delete as $con) {
+                    $con->delete();
+                }
+
+
+                $this->addSede($odv, $data, $row[71], $row[72], $row[73], $row[74], $row[75], $row[76], $row[77], $row[78] );
+
+
+            } else {
+                // sto lavorando su una sede, i dati dell'odv sono stati già messi
+                $this->addSede($odv, $data, $row[71], $row[72], $row[73], $row[74], $row[75], $row[76], $row[77], $row[78] );
+            }
+
+
+            $n_row++;
+        }
+
+        $orgs = \common\models\VolOrganizzazione::find()->where(['not in','ref_id',$list_numeri_regionali_da_non_toccare])->all();
+        foreach ($orgs as $org) {
+            $org->stato_iscrizione = 6;
+            if(!$org->save()) throw new \Exception(json_encode($org->getErrors()), 1);
+            
+        }
+
+        if($commit == 1) {
+            $trans->commit();
+        } else {
+            $trans->rollBack();
+        }
+    }
+
+    // ritorna id connessione
+    private function saveContattoOdv($odv, $recapito, $use_type, $type) {
+        $utl_contatto = \common\models\utility\UtlContatto::find()->where(['contatto'=>$recapito])->one();
+        if(!$utl_contatto) {
+            $utl_contatto = new \common\models\utility\UtlContatto;
+            $utl_contatto->contatto = $recapito;
+            $utl_contatto->type = $type;
+            $utl_contatto->save();
+        }
+
+        $exist = \common\models\organizzazione\ConOrganizzazioneContatto::find()
+        ->where(['id_organizzazione'=>$odv->id])
+        ->andWhere(['id_contatto'=>$utl_contatto->id])
+        ->andWhere(['use_type'=>$use_type])
+        ->one();
+        
+        if(!$exist) {
+            $exist = new \common\models\organizzazione\ConOrganizzazioneContatto();
+            $exist->id_organizzazione = $odv->id;
+            $exist->id_contatto = $utl_contatto->id;
+            $exist->type = $type;
+            $exist->use_type = $use_type;
+            if(!$exist->save()) throw new \Exception(json_encode($exist->getErrors()), 1);
+        } 
+
+        return $exist->id;
+        
+    }
+
+    private function mapTipo($t) {
+        return (strtoupper($t) == 'SEDE LEGALE') ? 'Sede Legale' : 'Sede Operativa';
+    }
+
+    private function addSede($odv, $all_data, $nome, $tipo, $provincia, $comune, $indirizzo, $cap, $lon, $lat) {
+
+        $_comune = \common\models\LocComune::find()->where([
+            'comune' => $comune
+        ])->one();
+
+        if(!$_comune) throw new \Exception("Comune non trovato " . $comune, 1);
+        
+        if($tipo == 'Sede legale') {
+            
+            $sede_exist = \common\models\VolSede::find()
+                ->where(['id_organizzazione'=>$odv->id])
+                ->andWhere(['tipo'=>$this->mapTipo($tipo)])
+                ->one();
+
+        } else {
+
+            $num_sedi = $this->getNumSediOperativeOdv($odv->ref_id, $all_data);
+            if($num_sedi == 1) {
+                $sede_exist = \common\models\VolSede::find()
+                    ->where(['id_organizzazione'=>$odv->id])
+                    ->andWhere(['tipo'=>$this->mapTipo($tipo)])
+                    ->one();
+            } else {
+                $sede_exist = \common\models\VolSede::find()
+                    ->where(['id_organizzazione'=>$odv->id])
+                    ->andWhere(['comune'=>$_comune->id])
+                    ->andWhere(['tipo'=>$this->mapTipo($tipo)])
+                    ->andWhere(['cap'=>$cap])
+                    ->all();
+                if(count($sede_exist) == 1) {
+                    $sede_exist = $sede_exist[0];
+                } else {
+                    $sede_exist = null;
+                }
+            }   
+
+        }
+
+
+        if(!$sede_exist) {
+            $sede_exist = new \common\models\VolSede;
+            $sede_exist->id_organizzazione = $odv->id;
+
+            echo "NON ESISTE SEDE " . $this->mapTipo($tipo) . " -> " . $nome . " -> " . $odv->denominazione . "\n";
+        } 
+
+        $sede_exist->tipo = $this->mapTipo($tipo);
+        $sede_exist->name = $nome;
+        $sede_exist->cap = $cap;
+        $sede_exist->indirizzo = $indirizzo;
+        $sede_exist->comune = $_comune->id;
+        $sede_exist->lat = $lat;
+        $sede_exist->lon = $lon;
+        if(!$sede_exist->save()) throw new \Exception(json_encode($sede_exist->getErrors()), 1);
+        
+
+    }
+
+    private function getNumSediOperativeOdv($num_regionale, $data) {
+        $n = 0;
+        $found = false;
+        $current_num = null;
+        foreach ($data as $row) {
+
+            if($row[0] == $num_regionale) $current_num = $row[0];
+
+            if($current_num == $num_regionale) {
+                if($row[72] == 'Sede operativa') $n++;
+            }
+
+        }
+        return $n;
+    }
+
+
+
+    /**
+     * Carica tabelle temporanee per i comuni
+     * @param string $file_comuni_path path del file sql con i comuni
+     * @param string $file_geom_comuni_path path del file con le geometrie
+     * @return [type] [description]
+     */
+    public function actionImportComuniSqlFiles($file_comuni_path, $file_geom_comuni_path) {
+        
+
+        $trans = Yii::$app->db->beginTransaction();
+
+        try {
+            // carico comuni piatti
+            $import = file_get_contents($file_comuni_path, true);
+            $import = explode(";", $import);
+            foreach ($import as $query) {            
+                if(trim($query) != "") {
+                    Yii::$app->db->createCommand($query)->execute();
+                }
+            }
+
+            // carico comuni geometrici
+            $import = file_get_contents($file_geom_comuni_path, true);
+            $import = explode(";", $import);
+            foreach ($import as $query) {            
+                if(trim($query) != "") {
+                    Yii::$app->db->createCommand($query)->execute();
+                }
+            }
+
+            $trans->commit();
+
+        } catch(\Exception $e) {
+
+            $trans->rollBack();
+            throw $e;
+            
+        }
+
+
+
+    }
+
+    /**
+     * In base alla cartella temporanea aggiunge i comuni non presenti nella regione di riferimento
+     * @return [type] [description]
+     */
+    public function actionAddComuniNonPresenti(){
+        $trans = Yii::$app->db->beginTransaction();
+        try {
+
+            Yii::$app->db->createCommand("SELECT setval('loc_comune_id_seq', (SELECT MAX(id) FROM loc_comune));")->execute();
+            Yii::$app->db->createCommand('INSERT INTO loc_comune(
+                "id_regione", "id_provincia", "comune", "idstat", "zona_geografica", "codnuts2", "codnuts3", "codmetropoli",
+                "codistat",
+                "codcatasto",
+                "provincia_sigla",
+                "cap",
+                "codregione",
+                "isprovincia",
+                "altitudine",
+                "islitoraneo",
+                "codmontano",
+                "superficie",
+                "popolazione2011",
+                "prefisso_tel",
+                "zona_altimetrica"
+                ) SELECT 
+                id_regione, id_provincia, comune, null, zona_geografica, codnuts2, codnuts3, codmetropoli,
+                codistat,
+                codcatasto,
+                provincia_sigla,
+                cap,
+                codregione,
+                isprovincia,
+                altitudine,
+                islitoraneo,
+                codmontano,
+                superficie,
+                popolazione2011,
+                prefisso_tel,
+                zona_altimetrica
+                FROM tmp_loc_comune_2021
+                WHERE (SELECT count(*) FROM loc_comune WHERE loc_comune.codistat = tmp_loc_comune_2021.codistat::TEXT) = 0;')
+            ->execute();
+
+            Yii::$app->db->createCommand("ALTER TABLE loc_comune_geom RENAME TO old_loc_comune_geom;")->execute();
+            Yii::$app->db->createCommand("ALTER TABLE tmp_loc_comune_geom RENAME TO loc_comune_geom;")->execute();
+
+            Yii::$app->db->createCommand("UPDATE loc_comune SET soppresso = true WHERE id in (SELECT id FROM loc_comune 
+                LEFT JOIN loc_comune_geom ON loc_comune_geom.pro_com::INTEGER = loc_comune.codistat::INTEGER
+                WHERE loc_comune_geom.gid is null);")->execute();
+
+
+            $trans->commit();
+
+        } catch(\Exception $e) {
+            $trans->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Chiusura evento retrodatata
+     * @param  [type] $id_evento [description]
+     * @param  [type] $dataora   Y-m-d H:i:s
+     * @return [type]            [description]
+     */
+    public function actionCloseEventoWithDate($id_evento, $dataora) {
+
+        $dt = \DateTime::createFromFormat('Y-m-d H:i:s', $dataora);
+        if(is_bool($dt)) throw new \Exception("Data non valida", 1);
+
+        $trans = Yii::$app->db->beginTransaction();
+        try {
+        
+            $evento = UtlEvento::findOne($id_evento);
+            if(!$evento) throw new \Exception("Evento non trovato", 1);
+            
+            if($evento->stato == 'Chiuso') throw new \Exception("Evento già chiuso", 1);
+            
+            $evento->stato = 'Chiuso';
+            $evento->closed_at = $dataora;
+            $evento->save();
+
+            echo "Chiuso";
+
+            $trans->commit();
+        } catch(\Exception $e) {
+            $trans->rollBack();
+            throw $e;
+        }
+    }
 
 }

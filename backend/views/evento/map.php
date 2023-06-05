@@ -10,10 +10,12 @@ use yii\grid\GridView;
 $this->title = 'Mappa eventi calamitosi in corso';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-
+<?= $this->render('_partial_elicotteri_volo', []); ?>
 <div id="map-canvas" class="site-index" ng-app="mapAngular">
     <h1><?= Html::encode($this->title) ?></h1>
-    <p class="carto-link"><?php echo Html::a('Cartografia', ['/sistema-cartografico?can_add=1'], ['class' => 'btn btn-default']) ?></p>
+    <?php if(Yii::$app->FilteredActions->showCartografico): ?>
+        <p class="carto-link"><?php echo Html::a('Cartografia', ['/sistema-cartografico?can_add=1'], ['class' => 'btn btn-default']) ?></p>
+    <?php endif; ?>
     <div ng-controller="mapEventoController">
         <ui-gmap-google-map center='{latitude: <?php echo Yii::$app->params['lat']; ?>, longitude: <?php echo Yii::$app->params['lng']; ?>}' zoom='map.zoom'>
             <ui-gmap-marker ng-repeat="marker in markers" coords="{latitude: marker.latitude, longitude: marker.longitude}" options="marker.options" events="marker.events" idkey="marker.id">

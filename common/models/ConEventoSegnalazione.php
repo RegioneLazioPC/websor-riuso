@@ -16,6 +16,11 @@ use Yii;
 class ConEventoSegnalazione extends \yii\db\ActiveRecord
 {
     
+    public static function primaryKey()
+    {
+        return ['idsegnalazione','idevento'];
+    }
+    
     /**
      * @inheritdoc
      */

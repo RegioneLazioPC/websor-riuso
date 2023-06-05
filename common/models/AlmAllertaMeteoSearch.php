@@ -42,14 +42,13 @@ class AlmAllertaMeteoSearch extends AlmAllertaMeteo
      */
     public function search($params)
     {
-        $query = AlmAllertaMeteo::find()->orderBy([
-        'id' => SORT_DESC //specify sort order ASC for ascending DESC for descending      
-        ]);
+        $query = AlmAllertaMeteo::find();
 
         // add conditions that should always apply here
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
+            'sort'=> ['defaultOrder' => ['data_allerta' => SORT_DESC]],
         ]);
 
         $this->load($params);

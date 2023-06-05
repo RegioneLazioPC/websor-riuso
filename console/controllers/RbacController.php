@@ -131,17 +131,22 @@ class RbacController extends Controller
      * @var [type]
      */
     private $permissions_map = [
+
+        'viewDashboard' => ['Dirigente', 'Funzionario', 'Admin'],
+
         'createSegnalazione' => ['Operatore','Dirigente','Funzionario','Volontario','VF'],
         'viewSegnalazione' => ['Operatore','Dirigente','Funzionario','Volontario','VF'],
         'listSegnalazioni' => ['Operatore','Dirigente','Funzionario','Volontario','VF'],
         'updateSegnalazione' => ['Operatore','Dirigente','Funzionario','Volontario','VF'],
         'closeSegnalazione' => ['Operatore','Dirigente','Funzionario','VF'],
         'transformSegnalazioneToEvento' => ['Operatore','Dirigente','Funzionario'],
+        'changeSegnalazioneEvento' => ['Funzionario', 'Dirigente'],
         
         'listEventi' => ['Operatore','Dirigente','Funzionario','Volontario','VF'],
         'listEventiChiusi' => ['Operatore','Dirigente','Funzionario'],
         'listEventiArchiviati' => ['Operatore','Dirigente','Funzionario'],
         'viewEvento' => ['Operatore','Dirigente','Funzionario','Volontario','VF'],
+
         
         'createEvento'=> ['Dirigente'],
         'publicEvento' => ['Operatore','Dirigente','Funzionario'],
@@ -163,6 +168,7 @@ class RbacController extends Controller
         'createRichiestaElicottero' => ['Operatore','Dirigente','Funzionario','VF'],
         'updatePartialRichiestaElicottero' => ['Funzionario', 'Operatore'],
         'updateRichiestaElicottero' => ['Dirigente'],
+        'annullateRichiestaElicottero' => ['Dirigente'],
         'sendRichiestaElicotteroToCOAU' => ['Operatore','Dirigente','Funzionario'],
 
         'exportData' => ['Operatore','Dirigente','Funzionario'],
@@ -204,12 +210,60 @@ class RbacController extends Controller
         'deleteAppUser' => ['Dirigente', 'Funzionario'],
 
         'ManageEverbridge' => ['Admin'],
+        'manageRecapitiOrgs' => ['Admin'],
 
         'viewTipoRisorsaMeta' => ['Admin'],
         'updateTipoRisorsaMeta' => ['Admin'],
         'deleteTipoRisorsaMeta' => ['Admin'],
 
-        'adminPermissions' => ['Admin']
+        'adminPermissions' => ['Admin'],
+
+        'createCapResource' => ['Funzionario', 'Dirigente', 'Admin'],
+        'deleteCapResource' => ['Funzionario', 'Dirigente', 'Admin'],
+        'updateCapResource' => ['Funzionario', 'Dirigente', 'Admin'],
+        'unlockSemaphoreCapResource' => ['Funzionario', 'Dirigente', 'Admin'],
+        'listCapResources' => ['Funzionario', 'Dirigente', 'Admin'],
+        'listCapMessages' => ['Funzionario', 'Dirigente', 'Admin'],
+        'viewCapMessage' => ['Funzionario', 'Dirigente', 'Admin'],
+        'editCapMap' => ['Funzionario', 'Dirigente', 'Admin'],
+
+
+        'viewConsumer' => ['Funzionario', 'Dirigente', 'Admin'],
+        'createCapConsumer' => ['Funzionario', 'Dirigente', 'Admin'],
+        'updateCapConsumer' => ['Funzionario', 'Dirigente', 'Admin'],
+        'updateCapConsumerPassword' => ['Funzionario', 'Dirigente', 'Admin'],
+        'deleteCapConsumer' => ['Funzionario', 'Dirigente', 'Admin'],
+        'viewListCapVehicles'=>['Dirigente', 'Funzionario','Admin'],
+        'viewListCapVehiclesHistory'=>['Dirigente', 'Funzionario','Admin'],
+
+        'viewEnteTask' => ['Funzionario', 'Dirigente', 'Admin'],
+        'createEnteTask' => ['Funzionario', 'Dirigente', 'Admin'],
+        'updateEnteTask' => ['Funzionario', 'Dirigente', 'Admin'],
+        'deleteEnteTask' => ['Admin'],
+
+        'listSalaOperativaEsterna' => ['Dirigente', 'Funzionario', 'Admin'],
+        'updateSalaOperativaEsterna' => ['Dirigente', 'Funzionario', 'Admin'],
+        'createSalaOperativaEsterna' => ['Dirigente', 'Funzionario', 'Admin'],
+        'deleteSalaOperativaEsterna' => ['Dirigente', 'Funzionario', 'Admin'],
+        
+        'listSchieramento'=>['Dirigente', 'Funzionario','Admin'],
+        'updateSchieramento'=>['Dirigente', 'Funzionario','Admin'],
+        'createSchieramento'=>['Dirigente', 'Funzionario','Admin'],
+        'deleteSchieramento'=>['Dirigente', 'Funzionario','Admin'],
+        'activateSchieramento'=>['Dirigente', 'Funzionario','Admin'],
+
+        // geography
+        'ListGeoLayer' => ['Admin'],
+        'CreateGeoLayer' => ['Admin'],
+        'DeleteGeoLayer' => ['Admin'],
+
+        'ListGeoQuery' => ['Admin'],
+        'CreateGeoQuery' => ['Admin'],
+        'UpdateGeoQuery' => ['Admin'],
+        'DeleteGeoQuery' => ['Admin']
+        
+        // lo lasciamo in standby prima di capire se creare segnalazione o evento
+        //'createEventFromCapMessage' => ['Funzionario', 'Dirigente'],
     ];
 
     /**
@@ -218,6 +272,13 @@ class RbacController extends Controller
      */
     private $permission_children_map = [
         'adminPermissions' => [
+            'manageRecapitiOrgs',
+
+            'listSalaOperativaEsterna',
+            'updateSalaOperativaEsterna',
+            'createSalaOperativaEsterna',
+            'deleteSalaOperativaEsterna',
+
             'createSegnalazione',
             'viewSegnalazione',
             'listSegnalazioni',
@@ -257,6 +318,7 @@ class RbacController extends Controller
             'manageAutomezzi',
             'manageCategorie',
             'manageAggregatori',
+            'manageTipoEventoSpecializzazione',
             'manageTipiAutomezzo',
             'manageTipiAttrezzatura',
             'manageTipiEvento',
@@ -271,7 +333,12 @@ class RbacController extends Controller
             'manageRubricaGroup',
             'manageVolontari',
 
-            'manageRbac'
+            'manageRbac',
+
+            'viewEnteTask',
+            'createEnteTask',
+            'updateEnteTask',
+            'deleteEnteTask',
         ],
         'manageAllerta' => [
             'listAllerte',
@@ -314,7 +381,9 @@ class RbacController extends Controller
             'createTaskEvento',
             'updateTaskEvento',
             'createIngaggio',
-            'updateIngaggio'
+            'updateIngaggio',
+            'listAttivazioniToCheck',
+            'editAttivazioniToCheck'
         ],
         'viewLog' => [
             'viewLogSegnalazioni',
@@ -347,6 +416,12 @@ class RbacController extends Controller
             'createAggregatore',
             'updateAggregatore',
             'deleteAggregatore'
+        ],
+        'manageTipoEventoSpecializzazione' => [
+            'viewTipoEventoSpecializzazione',
+            'createTipoEventoSpecializzazione',
+            'updateTipoEventoSpecializzazione',
+            'deleteTipoEventoSpecializzazione',
         ],
         'manageTipiAutomezzo' => [
             'viewTipoAutomezzo',
@@ -494,7 +569,7 @@ class RbacController extends Controller
         endforeach;
 
         
-
+        Yii::$app->cache->delete($auth->cacheKey);
 
     }
 

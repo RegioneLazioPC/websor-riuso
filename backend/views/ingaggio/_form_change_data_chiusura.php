@@ -9,10 +9,10 @@ use kartik\widgets\DateTimePicker;
 /* @var $form yii\widgets\ActiveForm */
 
 $dt = \DateTime::createFromFormat('Y-m-d H:i:s', $model->closed_at);
-$model->closed_at = $dt->format('d-m-Y H:i');
+$model->closed_at = (!is_bool($dt)) ? $dt->format('d-m-Y H:i') : null;
 
 $dt = \DateTime::createFromFormat('Y-m-d H:i:s', $model->created_at);
-$model->created_at = $dt->format('d-m-Y H:i');
+$model->created_at = (!is_bool($dt)) ? $dt->format('d-m-Y H:i') : null;
 
 ?>
 

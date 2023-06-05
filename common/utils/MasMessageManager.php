@@ -1,8 +1,6 @@
 <?php
 namespace common\utils;
 
-use Yii;
-use yii\helpers\Url;
 use common\models\MasMessage;
 use common\models\MasMessageTemplate;
 
@@ -20,24 +18,41 @@ class MasMessageManager
 		$this->template = $template;
 	}
 
-
+	/**
+	 * Imposta messaggio
+	 * @param MasMessage $message 
+	 */
 	public function setMessage(MasMessage $message) 
 	{
 		$this->message = $message;
 	}
 
+	/**
+	 * Imposta template
+	 * @param MasMessageTemplate $template 
+	 */
 	public function setTemplate( $template )  
 	{
 		$this->template = @$template;
 	}
 
-
+	/**
+	 * Preview
+	 * @param  string $message  
+	 * @param  MasMessageTemplate $template 
+	 * @param  integer $channel  
+	 * @return MasMessageManager         
+	 */
 	public static function getPreview( $message, $template, $channel ) 
 	{
 		return (new self( $message, $template ))->buildFullPreview($channel);
 	}
 
-	
+	/**
+	 * Costruisci preview del messaggio
+	 * @param  integer $channel
+	 * @return string          
+	 */
 	private function buildFullPreview( $channel )
 	{
 		switch ( $channel ) {
@@ -56,6 +71,13 @@ class MasMessageManager
 		}
 	}
 
+	/**
+	 * Ritorna messaggio parsato
+	 * @param  string  $message 
+	 * @param  string  $body    
+	 * @param  boolean $replace 
+	 * @return string         
+	 */
 	private function returnParsedMessage( $message, $body, $replace = false ) 
 	{
 		
@@ -66,6 +88,12 @@ class MasMessageManager
 		return $message;
 	}
 
+	/**
+	 * Sostituisci i tag nel messaggio
+	 * @param  string $message 
+	 * @param  string $body    
+	 * @return string
+	 */
 	private function replaceTags( $message, $body) {
 		if( !empty( $this->message->allerta ) ) {
 
@@ -77,8 +105,7 @@ class MasMessageManager
 
 	/**
 	 * @deprecated
-	 * @param  [type] $text [description]
-	 * @return [type]       [description]
+	 * 
 	 */
 	private function replaceImages( $text ) {
 		
@@ -100,8 +127,7 @@ class MasMessageManager
 
 	/**
 	 * @deprecated
-	 * @param  [type] $filename [description]
-	 * @return [type]           [description]
+	 * 
 	 */
 	private function data_uri($filename) {
 		try {
@@ -120,8 +146,8 @@ class MasMessageManager
 
 	/**
 	 * @deprecated
-	 * @param  [type] $index [description]
-	 * @return [type]        [description]
+	 * @param  integer $index 
+	 * @return string|boolean
 	 */
 	private function get_mime($index){
 		try {
@@ -147,9 +173,9 @@ class MasMessageManager
 
 	/**
 	 * Metodo pubblico per avere la formattazione indipendentemente dal tipo di messaggio
-	 * @param  [type] $text [description]
-	 * @param  [type] $body [description]
-	 * @return [type]       [description]
+	 * @param  string $text 
+	 * @param  string $body
+	 * @return string
 	 */
 	public static function returnPlainReplacedMessage( $message, $body, $data_allerta = null ) {
 		if(!empty($body) && $body != "") {

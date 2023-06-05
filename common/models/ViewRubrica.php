@@ -87,15 +87,15 @@ class ViewRubrica extends \yii\db\ActiveRecord
 
     public static function getTipiRiferimento() {
         return [
-            "organizzazione"=> "organizzazione",
-            "ente" => "ente",
-            "struttura" => "struttura",
-            "operatore pc" => "operatore pc",
-            "volontario"=> "volontario",
-            "prefettura"=> "prefettura",
-            "comunita' montana"=> "comunita' montana",
             "comune"=> "comune",
-            "mas_rubrica"=>"mas_rubrica"
+            "comunita' montana"=> "comunita' montana",
+            "ente" => "ente",
+            "mas_rubrica"=>"mas_rubrica",
+            "operatore pc" => "operatore pc",
+            "organizzazione"=> "organizzazione",
+            "prefettura"=> "prefettura",
+            "struttura" => "struttura",
+            "volontario"=> "volontario",
         ];
     }
 

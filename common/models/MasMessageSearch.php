@@ -40,12 +40,11 @@ class MasMessageSearch extends MasMessage
      */
     public function search($params)
     {
-        $query = MasMessage::find()->where('id_allerta is null')->orderBy([
-            'id' => SORT_DESC //specify sort order ASC for ascending DESC for descending      
-        ]);
+        $query = MasMessage::find()->where('id_allerta is null');
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
+            'sort'=> ['defaultOrder' => ['created_at' => SORT_DESC]],
         ]);
 
         $this->load($params);

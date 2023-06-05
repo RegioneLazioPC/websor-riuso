@@ -37,6 +37,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'targa',
             'data_immatricolazione',
             //'idsquadra',
+            'device_id',
             'classe',
             'sottoclasse',
             'modello',

@@ -41,7 +41,7 @@ class VolTipoOrganizzazione extends \yii\db\ActiveRecord
             [['tipologia'], 'required'],
             [['tipologia', 'id_sync'], 'string'],
             [['update_zona_allerta_strategy'], 'integer'],
-            [['update_zona_allerta_strategy'],'required']
+            //[['update_zona_allerta_strategy'],'required']
         ];
     }
 

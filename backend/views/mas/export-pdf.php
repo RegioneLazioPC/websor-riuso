@@ -47,17 +47,37 @@ use yii\helpers\Html;
                     if($n%2 == 0) $style .= '; background-color: #eee';
                     $send_ = json_decode( $dest['invii'], true );
 
-                    foreach ($send_ as $row) {
-                        ?>
-                        <tr style="<?php echo $style;?>">
-                            <td><?php echo Html::encode($dest['valore_riferimento']);?></td>
-                            <td><?php echo Html::encode($dest['valore_rubrica_contatto']);?></td>
-                            <td><?php echo ($dest['inviato'] > 0) ? 'Si' : 'No';?></td>
-                            <td><?php echo (!empty($row['status'])) ? \common\models\MasSingleSend::getStatoByNumber( $row['status'] ) : '';?></td>
-                            <td><?php echo (!empty($row['status'])) ? ((!empty($row['sent'])) ? date('d-m-Y H:i:s', $row['sent']) : '') : '';?></td>
-                            <td><?php echo (!empty($row['status'])) ? ((!empty($row['feedback'])) ? date('d-m-Y H:i:s', $row['feedback']) : '') : '';?></td>
-                        </tr>
-                        <?php
+
+                    if(empty($invio->mas_ref_id)) {
+
+                        foreach ($send_ as $row) {
+                            ?>
+                            <tr style="<?php echo $style;?>">
+                                <td><?php echo $dest['valore_riferimento'];?></td>
+                                <td><?php echo $dest['valore_rubrica_contatto'];?></td>
+                                <td><?php echo ($dest['inviato'] > 0) ? 'Si' : 'No';?></td>
+                                <td><?php echo (!empty($row['status'])) ? \common\models\MasSingleSend::getStatoByNumber( $row['status'] ) : '';?></td>
+                                <td><?php echo (!empty($row['status'])) ? ((!empty($row['sent'])) ? date('d-m-Y H:i:s', $row['sent']) : '') : '';?></td>
+                                <td><?php echo (!empty($row['status'])) ? ((!empty($row['feedback'])) ? date('d-m-Y H:i:s', $row['feedback']) : '') : '';?></td>
+                            </tr>
+                            <?php
+                        }
+                    
+                    } else {
+                        foreach ($send_ as $row) {
+
+                            ?>
+                            <tr style="<?php echo $style;?>">
+                                <td><?php echo $dest['valore_riferimento'];?></td>
+                                <td><?php echo $dest['valore_rubrica_contatto'];?></td>
+                                <td><?php echo ($dest['inviato'] > 0) ? 'Si' : 'No';?></td>
+                                <td><?php echo $row['status_string'] ?? ''//(!empty($row['status'])) ? \common\models\MasSingleSend::getStatoByNumberV2( $row['status'] ) : '';?></td>
+                                <td><?php echo $row['sent'] ?? '';?></td>
+                                <td><?php echo $row['feedback'] ?? $row['refuse'] ?? '';?></td>
+                            </tr>
+                            <?php
+                        }
+
                     }
                     
                                         

@@ -161,7 +161,9 @@ class MediaController extends Controller
     {
         
         $file = UplMedia::find()->where(['id'=>$id])->one();
-        if(!$file) throw new NotFoundHttpException;
+        if(!$file) {
+            throw new NotFoundHttpException;
+        }
 
         $path = Yii::getAlias('@backend/uploads/');
         if(Yii::$app->request->get('oriented')) {
@@ -175,6 +177,10 @@ class MediaController extends Controller
 
         }
         
+        if(!file_exists($file_path)) {
+            throw new NotFoundHttpException;
+        }
+
         return Yii::$app->response->sendFile(
                 $file_path, 
                 $file->nome, ['inline'=>true]);

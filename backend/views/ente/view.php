@@ -85,6 +85,12 @@ $this->params['breadcrumbs'][] = $this->title;
     ]); ?>
 
 
+    <?php 
+        
+        echo $this->render('_form-contatto', [
+            'model'=>$model
+        ]);       
+    ?>
 
     <?php 
     $contattiDataProvider = new ActiveDataProvider([
@@ -128,7 +134,25 @@ $this->params['breadcrumbs'][] = $this->title;
                         break;
                     }
                 }
-            ]
+            ],
+            [
+                'class' => 'yii\grid\ActionColumn',
+                'template'=>'{delete}',
+                'buttons' => [
+                    'delete' => function ($url, $model) {
+
+                        if(Yii::$app->user->can('manageRecapitiOrgs') && (empty($model->id_sync) || $model->id_sync == '') ){
+                            $url = Url::to(['ente/delete-contatto-rubrica', 'id' => $model->id ]);
+                            return Html::a('<span class="fa fa-trash"></span>&nbsp;&nbsp;', $url, [
+                                'title' => Yii::t('app', 'Rimuovi'),
+                                'data-toggle'=>'tooltip'
+                            ]);
+                        }else{
+                            return '';
+                        }
+                    },
+                ]
+            ],
         ],
     ]); ?>
 

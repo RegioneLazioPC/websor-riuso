@@ -26,8 +26,7 @@ class MasHttpServices {
 	
 	/**
 	 * Ritorna lo stato dell'invio
-	 * @param  [type] $id_invio [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_invio 
 	 */
 	private function getInvioStatus( $id_invio ) {
 		try {
@@ -47,8 +46,7 @@ class MasHttpServices {
 
 	/**
 	 * Ritorna i messaggi associati ad un invio
-	 * @param  [type] $id_invio [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_invio 
 	 */
 	private function getInvioMessages( $id_invio ) {
 		try {
@@ -69,8 +67,7 @@ class MasHttpServices {
 
 	/**
 	 * Stoppa l'uso della coda per un invio
-	 * @param  [type] $id_invio [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_invio 
 	 */
 	private function stopInvio( $id_invio ) {
 		try {
@@ -90,8 +87,7 @@ class MasHttpServices {
 
 	/**
 	 * Fa ripartire i messaggi dell'invio
-	 * @param  [type] $id_invio [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_invio 
 	 */
 	private function restartInvio( $id_invio ) {
 		try {
@@ -111,8 +107,7 @@ class MasHttpServices {
 
 	/**
 	 * Stoppa l'uso della coda per un messaggio
-	 * @param  [type] $id_invio [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_invio 
 	 */
 	private function stopMessage( $id_message ) {
 		try {
@@ -132,8 +127,7 @@ class MasHttpServices {
 
 	/**
 	 * Stoppa l'uso della coda per un messaggio
-	 * @param  [type] $id_invio [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_invio 
 	 */
 	private function restartMessage( $id_message ) {
 		try {
@@ -153,8 +147,7 @@ class MasHttpServices {
 
 	/**
 	 * Processa manualmente un messaggio
-	 * @param  [type] $id_message [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_message 
 	 */
 	private function processManually( $id_message ) {
 		try {
@@ -174,8 +167,7 @@ class MasHttpServices {
 
 	/**
 	 * Riverifica un messaggio
-	 * @param  [type] $id_invio [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_invio 
 	 */
 	private function reverifyMessage( $id_message ) {
 		try {
@@ -195,8 +187,7 @@ class MasHttpServices {
 
 	/**
 	 * Stoppa processo
-	 * @param  [type] $id_message [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_message 
 	 */
 	private function stopProcess( $id_message ) {
 		try {
@@ -216,8 +207,7 @@ class MasHttpServices {
 
 	/**
 	 * Restart di processo
-	 * @param  [type] $id_message [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_message 
 	 */
 	private function restartProcess( $id_message ) {
 		try {
@@ -237,8 +227,7 @@ class MasHttpServices {
 
 	/**
 	 * Ritorna i contatti
-	 * @param  [type] $id_invio [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_invio 
 	 */
 	private function getContacts( $id_invio ) {
 		try {
@@ -259,8 +248,7 @@ class MasHttpServices {
 
 	/**
 	 * Ritorna i log dell'invio
-	 * @param  [type] $id_invio [description]
-	 * @return [type]           [description]
+	 * @param  integer $id_invio 
 	 */
 	private function getLogs( $id_invio, $channel = 'Email' ) {
 		try {
@@ -282,7 +270,6 @@ class MasHttpServices {
 
 	/**
 	 * Ritorna se i consumer stanno girando
-	 * @return boolean [description]
 	 */
 	private function isRunning() {
 		try {

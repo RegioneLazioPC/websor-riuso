@@ -35,6 +35,7 @@ if(!$dos->engaged) $dos->engaged = 0;
                                 true=> 'Si'
                             ])->label('Ingaggiato'); ?>
 
+
                     </div>
                     <div class="col-md-12">
                         <?php echo $form->field($dos, 'codicedos')->textInput()->label('Codice DOS'); ?>

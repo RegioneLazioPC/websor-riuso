@@ -8,6 +8,12 @@ use common\models\UtlAutomezzo;
 use backend\events\EditedUtlEventoEvent;
 
 use common\models\ConOperatoreTaskSearch;
+use common\models\UtlIngaggioRlFeedback;
+use common\models\ConVolontarioIngaggio;
+
+use common\models\UtlAnagrafica;
+use common\models\app\AppConfig;
+use common\models\utility\UtlContatto;
 /**
  * This is the model class for table "utl_ingaggio".
  *
@@ -192,6 +198,12 @@ class UtlIngaggio extends \yii\db\ActiveRecord
         ];
     }
 
+    public function extraFields() {
+        return [
+            'attrezzatura', 'automezzo', 'evento', 'organizzazione', 'feedbackRl', 'sede', 'conVolontarioIngaggio', 'volontari'
+        ];
+    }
+
     /**
      * @return \yii\db\ActiveQuery
      */
@@ -227,9 +239,25 @@ class UtlIngaggio extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
+    public function getFeedbackRl()
+    {
+        return $this->hasOne(UtlIngaggioRlFeedback::className(), ['id_ingaggio' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
     public function getSede()
     {
         return $this->hasOne(VolSede::className(), ['id' => 'idsede']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getConVolontarioIngaggio()
+    {
+        return $this->hasMany(ConVolontarioIngaggio::className(), ['id_ingaggio' => 'id']);
     }
 
     /**
@@ -376,13 +404,104 @@ class UtlIngaggio extends \yii\db\ActiveRecord
             $diarioEvento->idfunzione_supporto = 5; //DATI CABLATI NEL DB
             $diarioEvento->idtask = 4; //DATI CABLATI NEL DB
             $diarioEvento->idevento = $this->idevento;
-            $diarioEvento->note = $task_name . ' ' . $this->organizzazione->ref_id . ' - ' . $this->organizzazione->denominazione;
-            $diarioEvento->idoperatore = Yii::$app->user->identity->operatore->id;
+            $diarioEvento->note = $task_name . ' ' . $this->organizzazione->ref_id . ' - ' . $this->organizzazione->denominazione . ((empty(Yii::$app->user)) ? ' (Chiuso da console)' : '');
+            $diarioEvento->idoperatore = (!empty(Yii::$app->user) && !empty(Yii::$app->user->identity) && !empty(Yii::$app->user->identity->operatore)) ? Yii::$app->user->identity->operatore->id : null;
             $diarioEvento->save();
 
         endif;
 
         EditedUtlEventoEvent::handleEdited($this->idevento);
+    }
+
+
+    /**
+     * Invia notifica push nuova attivazione
+     * @return [type] [description]
+     */
+    public function sendPushAttivazione(){
+
+        try {
+            $has_to_send = AppConfig::findOne(['key'=>'attivazioni']);
+            if(!$has_to_send || empty($has_to_send->value)) return;
+
+            $val = json_decode($has_to_send->value);
+            if(empty($val->strategia_invio_push) || $val->strategia_invio_push == 'NESSUNA') return;
+
+            $strategy = $val->strategia_invio_push;
+
+            $cf_rappresentante_legale = $this->organizzazione->cf_rappresentante_legale;
+            if(empty($cf_rappresentante_legale)) return;
+
+            $ana = UtlAnagrafica::findOne(['codfiscale'=>strtoupper($cf_rappresentante_legale)]);
+            if(!$ana) return;
+
+            // token dell'anagrafica
+            $tokens = $ana->getContatto()->where(['type'=>UtlContatto::TYPE_DEVICE])->all();
+            
+            if($strategy == 'MAS') {
+
+                $msg_type = @$val->mas_message_type ? $val->mas_message_type : 'ATTIVAZIONI';
+
+                $dests = [];
+                foreach ($tokens as $token) {
+                    $dests[] = [
+                        'uid_contatto' => 'websor_'.$ana->codfiscale,
+                        'tipo_contatto' => 'RAPPRESENTANTE LEGALE ODV',
+                        'contatto' => $ana->codfiscale,
+                        'recapito' => $token->contatto,
+                        'num_elenco_territoriale' => $this->organizzazione->ref_id,
+                        'cf' => $ana->codfiscale,
+                        'channel' => $token->vendor == 'android' ? 'push android' : 'push ios',
+                        'ext_id' => null,
+                        'everbridge_identifier' => null,
+                        'indirizzo' => '',
+                        'comune' => '',
+                        'provincia' => '',
+                        'lat' => null,
+                        'lon' => null,
+                        'zone_allerta' => '',
+                        'target' => $msg_type
+                    ];
+                }
+                
+                
+                $channels = [
+                    'push android',
+                    'push ios'
+                ];
+                \common\utils\MasV2Dispatcher::sendPlainMessage(
+                    [
+                        'title' => 'Nuova attivazione',
+                        'ref' => 'attivazione_' . $this->id,
+                        'message_type' => $msg_type,
+                        'push_message' => 'La sala operativa ha attivato la tua organizzazione',
+                        'channels' => json_encode($channels)
+                    ],
+                    $dests,
+                    []
+                );
+
+            } elseif($strategy == 'WEBSOR') {
+
+                \common\utils\PushNotifications::sendPushMessage(
+                    [
+                        'title' => 'Nuova attivazione',
+                        'ref' => 'attivazione_' . $this->id,
+                        'push_message' => 'La sala operativa ha attivato la tua organizzazione'
+                    ],
+                    $tokens
+                );
+            }
+
+            return;
+
+        } catch(\Exception $e) {
+            
+            Yii::error($e, 'push_attivazione');
+            return;
+            
+        }
+
     }
 
 

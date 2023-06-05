@@ -65,23 +65,62 @@ $dataProvider = new ActiveDataProvider([
                 'attribute' => 'id',
                 'width' => '50px',
                 'value' => function($data){
-                    $connection = Yii::$app->getDb();
-                    $command = $connection->createCommand("WITH t as (SELECT count(\"status\") FILTER (
-                            WHERE 
-                                (\"status\" in (:sent,:received) AND channel not in ('Pec','Fax')) OR 
-                                (\"status\" = :received and channel in ('Pec','Fax'))
-                                ) > 0 as delivered 
-                        FROM mas_single_send m WHERE id_invio = :id_invio
-                        GROUP BY tipo_rubrica_contatto, id_rubrica_contatto)
-                        SELECT count(delivered) FILTER (WHERE delivered is true) as delivered FROM t;
-                            ;", [
-                        ':id_invio' => intval($data->id),
-                        ':sent' => \common\models\MasMessage::STATUS_SEND[0],
-                        ':received' => \common\models\MasMessage::STATUS_RECEIVED[0]
-                    ]);
 
-                    $result = $command->queryAll();
-                    return $result[0]['delivered'];
+                    if(!empty($data->mas_ref_id)) {        
+                
+                        $result = Yii::$app->db->createCommand("SELECT count( distinct (id_rubrica_contatto, tipo_rubrica_contatto) ) as num_recapitati FROM con_mas_invio_contact WHERE valore_rubrica_contatto in (
+                            SELECT distinct recapito as rec
+                            FROM mas_v2_feedback m
+                            WHERE m.id_invio = :id_invio
+                            AND ( (\"status\" in (2,3) AND m.channel not in ('Pec','Fax','Sms')) OR (\"status\" = 3 and m.channel in ('Pec','Fax','Sms')))
+                            )
+                            AND id_invio = :id_invio", [':id_invio' => $data->id]
+                        )
+                        ->queryAll();
+                        $delivered = isset($result[0]) ? $result[0]['num_recapitati'] : 0;
+                        
+                        
+                    } else {
+
+
+                        $connection = Yii::$app->getDb();
+                        $command = $connection->createCommand("WITH t as (SELECT count(\"status\") FILTER (
+                                WHERE 
+                                    (\"status\" in (:sent,:received) AND channel not in ('Pec','Fax','Sms')) OR 
+                                    (\"status\" = :received and channel in ('Pec','Fax','Sms'))
+                                    ) > 0 as delivered 
+                            FROM mas_single_send m WHERE id_invio = :id_invio
+                            GROUP BY tipo_rubrica_contatto, id_rubrica_contatto)
+                            SELECT count(delivered) FILTER (WHERE delivered is true) as delivered FROM t;
+                                ;", [
+                            ':id_invio' => intval($data->id),
+                            ':sent' => \common\models\MasMessage::STATUS_SEND[0],
+                            ':received' => \common\models\MasMessage::STATUS_RECEIVED[0]
+                        ]);
+
+                        $result = $command->queryAll();
+                        $delivered = $result[0]['delivered'];
+
+                    }
+
+                    
+                    return $delivered;/*
+                    return \common\models\MasSingleSend::find()
+                     ->from(['t' => '(SELECT distinct on (id_rubrica_contatto, tipo_rubrica_contatto, id_invio) * FROM mas_single_send)'])
+                    ->where(['id_invio'=>$data->id])
+                    ->andWhere(
+                        ['or',
+                            ['and',
+                                ['status'=>\common\models\MasMessage::STATUS_SEND],
+                                ['not in', 'channel', ['Pec','Fax']]
+                            ],
+                            ['and',
+                                ['status'=>\common\models\MasMessage::STATUS_RECEIVED],
+                                ['in', 'channel', ['Pec','Fax']]
+                            ]
+                        ]
+                    )->count();*/
+
                 }
             ],
             [
@@ -89,24 +128,66 @@ $dataProvider = new ActiveDataProvider([
                 'attribute' => 'id',
                 'width' => '50px',
                 'value' => function($data){
-                    $connection = Yii::$app->getDb();
-                    $command = $connection->createCommand("WITH t as (SELECT count(\"status\") FILTER (
-                            WHERE 
-                                (\"status\" in (:sent,:received) AND channel not in ('Pec','Fax')) OR 
-                                (\"status\" = :received and channel in ('Pec','Fax'))
-                                ) = 0 as not_delivered 
-                        FROM mas_single_send m WHERE id_invio = :id_invio
-                        GROUP BY tipo_rubrica_contatto, id_rubrica_contatto)
-                        SELECT count(not_delivered) FILTER (WHERE not_delivered is true) as not_delivered FROM t;
-                            ;", [
-                        ':id_invio' => intval($data->id),
-                        ':sent' => \common\models\MasMessage::STATUS_SEND[0],
-                        ':received' => \common\models\MasMessage::STATUS_RECEIVED[0]
-                    ]);
 
-                    $result = $command->queryAll();
-                    return $result[0]['not_delivered'];
+
+                    $total = \common\models\MasSingleSend::find()
+                    ->from(['t' => '(SELECT distinct on (id_rubrica_contatto, tipo_rubrica_contatto, id_invio) * FROM con_mas_invio_contact)'])->where(['id_invio'=>$data->id])->count();
+
+                    if(!empty($data->mas_ref_id)) {        
+                
+                        $result = Yii::$app->db->createCommand("SELECT count( distinct (id_rubrica_contatto, tipo_rubrica_contatto) ) as num_recapitati FROM con_mas_invio_contact WHERE valore_rubrica_contatto in (
+                            SELECT distinct recapito as rec
+                            FROM mas_v2_feedback m
+                            WHERE m.id_invio = :id_invio
+                            AND ( (\"status\" in (2,3) AND m.channel not in ('Pec','Fax','Sms')) OR (\"status\" = 3 and m.channel in ('Pec','Fax','Sms')))
+                            )
+                            AND id_invio = :id_invio", [':id_invio' => $data->id]
+                        )
+                        ->queryAll();
+                        $delivered = isset($result[0]) ? $result[0]['num_recapitati'] : 0;
+                        
+                        
+                    } else {
+
+
+                        $connection = Yii::$app->getDb();
+                        $command = $connection->createCommand("WITH t as (SELECT count(\"status\") FILTER (
+                                WHERE 
+                                    (\"status\" in (:sent,:received) AND channel not in ('Pec','Fax','Sms')) OR 
+                                    (\"status\" = :received and channel in ('Pec','Fax','Sms'))
+                                    ) > 0 as delivered 
+                            FROM mas_single_send m WHERE id_invio = :id_invio
+                            GROUP BY tipo_rubrica_contatto, id_rubrica_contatto)
+                            SELECT count(delivered) FILTER (WHERE delivered is true) as delivered FROM t;
+                                ;", [
+                            ':id_invio' => intval($data->id),
+                            ':sent' => \common\models\MasMessage::STATUS_SEND[0],
+                            ':received' => \common\models\MasMessage::STATUS_RECEIVED[0]
+                        ]);
+
+                        $result = $command->queryAll();
+                        $delivered = $result[0]['delivered'];
+
+                    }
+
+
                     
+                    return $total - $delivered;
+                    /*
+                    $subquery = "(SELECT count(id) FROM 
+                        mas_single_send WHERE
+                        id_rubrica_contatto = t.id_rubrica_contatto AND
+                        tipo_rubrica_contatto = t.tipo_rubrica_contatto AND 
+                        id_invio = t.id_invio AND 
+                        status in (2,3)
+                    )";
+                    return \common\models\MasSingleSend::find()
+                        ->from(['t' => '(SELECT distinct on (id_rubrica_contatto, tipo_rubrica_contatto, id_invio) * FROM mas_single_send)'])
+                        ->where(['id_invio'=>$data->id])
+                        ->andWhere([
+                            "=",$subquery,0
+                        ])->count();*/
+
                 }
             ],
             [

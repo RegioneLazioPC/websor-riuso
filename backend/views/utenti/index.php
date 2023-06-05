@@ -74,12 +74,32 @@ if( Yii::$app->user->can('updateAppUser') ) {
                  }
             ],
             [
+                'label' => 'Data registrazione',
+                'attribute' => 'created_at',
+                'format' => 'raw',
+                'contentOptions'=>['style'=>'width: 200px; overflow: auto; word-wrap: break-word;'],
+                'value' => function($data){
+                    return isset($data['user']) && isset($data['user']['created_at']) && !empty($data['user']['created_at']) ? Yii::$app->formatter->asDate($data['user']['created_at']).' '.Yii::$app->formatter->asTime($data['user']['created_at']) : "-";
+                }
+            ],/*
+            [
                 'label' => 'Telefono',
                 'attribute' => 'telefono',
                 'value' => function($data){
                     return $data['anagrafica']['telefono'];
                  }
-            ],
+            ],*/
+            //'email:email',
+            /*
+            [
+                'label' => 'Email',
+                'attribute' => 'email',
+                'format' => 'html',
+                'contentOptions'=>['style'=>'max-width: 100px; overflow: auto; word-wrap: break-word;'],
+                'value' => function($data){
+                    return Yii::$app->formatter->asEmail($data['anagrafica']['email']);
+                 }
+            ],*/
             [
                 'label' => 'Tipo utente',
                 'attribute' => 'tipo',
@@ -89,6 +109,17 @@ if( Yii::$app->user->can('updateAppUser') ) {
                     return $model->getTipo();
                 }
             ],
+            /*
+            [
+                'label' => 'Ruolo utente',
+                'attribute' => 'id_ruolo_segnalatore',
+                'format' => 'raw',
+                //'filter' => array(1=>'Cittadino privato', 2=>'Ente Pubblico'),
+                'filter'=> Html::activeDropDownList($searchModel, 'id_ruolo_segnalatore', ArrayHelper::map(UtlRuoloSegnalatore::find()->asArray()->all(), 'id', 'descrizione'), ['class' => 'form-control','prompt' => 'Tutti']),
+                'value' => function($data){
+                    return $data['ruoloSegnalatore']['descrizione'];
+                }
+            ],*/
             [
                 'label' => 'Organizzazione',
                 'attribute' => 'id_organizzazione',
@@ -96,6 +127,21 @@ if( Yii::$app->user->can('updateAppUser') ) {
                     if(!empty($model->organizzazione)) {
                         return implode("; ", array_map(function($org){ 
                             return $org->ref_id; 
+                        }, $model->organizzazione));
+                    } else {
+                        return "-";
+                    }
+                }
+            ],
+            [
+                'label' => 'Nome organizzazione',
+                'attribute' => 'nome_organizzazione',
+                'format' => 'raw',
+                'contentOptions'=>['style'=>'width: 300px; overflow: auto; word-wrap: break-word;'],
+                'value' => function($model){
+                    if(!empty($model->organizzazione)) {
+                        return implode("; ", array_map(function($org){ 
+                            return $org->denominazione; 
                         }, $model->organizzazione));
                     } else {
                         return "-";
@@ -131,6 +177,11 @@ if( Yii::$app->user->can('updateAppUser') ) {
                     }
                 }
             ],
+            /*
+            [
+                'label' => 'Nato a',
+                'attribute' => 'luogo_nascita',
+            ],*/
             [
                 'label' => 'Codice',
                 'attribute' => 'codice_attivazione'

@@ -8,15 +8,14 @@ use common\models\ConVolontarioIngaggio;
 
 use yii\widgets\Pjax;
 ?>
-<hr />
-<h1>Volontari</h1>
+<hr style="border-width: 3px; border-color: #d6d6d6;" />
 <?php 
     if(Yii::$app->user->can('updateIngaggio')) :
         echo Html::button(
         '<i class="glyphicon glyphicon-plus"></i> Aggiungi volontario',
         [
             'title' => Yii::t('app', 'Aggiungi volontario'),
-            'class' => 'popupIngaggiModal btn btn-success',
+            'class' => 'popupIngaggiModal btn btn-success m20h',
             'onclick' => 'javascript:function(e){ e.preventDefault(); jQuery(\'#modal-volontario\').modal(\'show\')}'
         ]);
     endif;
@@ -45,6 +44,9 @@ Pjax::begin();
     'pjax'=>true,
     'perfectScrollbar' => true,
     'perfectScrollbarOptions' => [],
+    'panel' => [
+            'heading'=>'<h2 class="panel-title">Lista volontari</h2>',
+        ],
     'columns' => [
         ['class' => 'yii\grid\SerialColumn'],
         [

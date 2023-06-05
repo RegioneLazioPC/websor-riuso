@@ -4,6 +4,7 @@ namespace common\models;
 
 use Yii;
 use nanson\postgis\behaviors\GeometryBehavior;
+
 /**
  * This is the model class for table "vol_sede".
  *
@@ -47,9 +48,9 @@ class VolSede extends \yii\db\ActiveRecord
             [['id_organizzazione', 'comune', 'indirizzo', 'tipo'], 'required'],
             [['id_organizzazione', 'comune'], 'default', 'value' => null],
             [['id_organizzazione', 'comune'], 'integer'],
-            [['indirizzo', 'tipo', 'disponibilita_oraria','cap'], 'string'],
+            [['indirizzo', 'tipo', 'disponibilita_oraria', 'cap'], 'string'],
             [['lat', 'lon', 'coord_x', 'coord_y'], 'number'],
-            [['email', 'email_pec', 'telefono', 'cellulare', 'altro_telefono', 'fax', 'altro_fax', 'sitoweb','id_sync'], 'string', 'max' => 255],
+            [['email', 'email_pec', 'telefono', 'cellulare', 'altro_telefono', 'fax', 'altro_fax', 'sitoweb', 'id_sync'], 'string', 'max' => 255],
             [['id_organizzazione'], 'exist', 'skipOnError' => true, 'targetClass' => VolOrganizzazione::className(), 'targetAttribute' => ['id_organizzazione' => 'id']],
             [['id_specializzazione'], 'exist', 'skipOnError' => true, 'targetClass' => UtlSpecializzazione::className(), 'targetAttribute' => ['id_specializzazione' => 'id']],
         ];
@@ -154,32 +155,33 @@ class VolSede extends \yii\db\ActiveRecord
      * @param  [type] $insert [description]
      * @return [type]         [description]
      */
-    public function beforeSave($insert) {
-        
-        if($this->lat && $this->lon) $this->geom = [$this->lon, $this->lat];
+    public function beforeSave($insert)
+    {
+
+        if ($this->lat && $this->lon) $this->geom = [$this->lon, $this->lat];
 
         return parent::beforeSave($insert);
     }
 
-    public function afterSave( $insert, $changedAttributes )
+    public function afterSave($insert, $changedAttributes)
     {
         parent::afterSave($insert, $changedAttributes);
 
         $this->organizzazione->updateZone();
-        
     }
 
     /**
      * Contatti della sede
      * @return [type] [description]
      */
-    public function getContatto() {
+    public function getContatto()
+    {
         return $this->hasMany(\common\models\utility\UtlContatto::className(), ['id' => 'id_contatto'])
-        ->via('conContatto');
+            ->via('conContatto');
     }
 
     public function getConContatto()
     {
-        return $this->hasMany(\common\models\organizzazione\ConSedeContatto::className(), ['id_sede'=>'id']);
+        return $this->hasMany(\common\models\organizzazione\ConSedeContatto::className(), ['id_sede' => 'id']);
     }
 }

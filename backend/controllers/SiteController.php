@@ -67,7 +67,6 @@ class SiteController extends Controller
     {
 
         return $this->redirect('evento/index');
-
     }
 
     /**
@@ -85,14 +84,15 @@ class SiteController extends Controller
         
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
-
             //Delete session items where id_user is null and last_write is > of last 48hours
             $dataLimite = date('Y-m-d H:i:s', strtotime("-48 hour"));
-            DbSession::deleteAll(['and', ['id_user' => Null], ['<', 'last_write', $dataLimite]]);
+            DbSession::deleteAll(['and', ['id_user' => null], ['<', 'last_write', $dataLimite]]);
 
             //Delete session items where id_user is = current user id
             DbSession::deleteAll(['id_user' => $model->user->id]);
 
+            \common\models\app\AppAccessLog::addLogElement('Login', []);
+            
             return $this->goBack();
         } else {
             return $this->render('login', [
@@ -110,6 +110,7 @@ class SiteController extends Controller
      */
     public function actionLogout()
     {
+        \common\models\app\AppAccessLog::addLogElement('Logout', []);
         Yii::$app->user->logout();
 
         return $this->goHome();

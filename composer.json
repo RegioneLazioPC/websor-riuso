@@ -14,7 +14,7 @@
   },
   "minimum-stability": "stable",
   "require": {
-    "php": ">=5.4.0",
+    "php": ">=7.4.0",
     "yiisoft/yii2": ">=2.0.6",
     "yiisoft/yii2-bootstrap": "*",
     "yiisoft/yii2-swiftmailer": "*",
@@ -46,9 +46,14 @@
     "davidepastore/codice-fiscale": "^0.4.0",
     "giggsey/libphonenumber-for-php": "^8.10",
     "kartik-v/yii2-export": "@dev",
-    "sizeg/yii2-jwt": "^1.1",
     "understeam/yii2-fcm": "~0.1",
-    "guzzlehttp/guzzle": "^6.3"
+    "guzzlehttp/guzzle": "^6.3",
+    "2amigos/yii2-chartjs-widget": "^2.1",
+    "amenadiel/jpgraph": "^4.0",
+    "paragraph1/php-fcm": "^0.7.0",
+    "mdanter/ecc": "1.0.0",
+    "sizeg/yii2-jwt": "^2.0",
+    "gasparesganga/php-shapefile": "^3.4"
   },
   "require-dev": {
     "yiisoft/yii2-debug": "*",

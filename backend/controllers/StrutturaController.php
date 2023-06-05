@@ -45,7 +45,12 @@ class StrutturaController extends Controller
                         'actions' => ['index', 'view', 'update',
                         'tipo-struttura', 'view-tipo-struttura', 'update-tipo-struttura'],
                         'permissions' => ['Admin']
-                    ]
+                    ],
+                    [
+                        'allow' => true,
+                        'actions' => ['add-contatto-rubrica', 'delete-contatto-rubrica'],
+                        'permissions' => ['manageRecapitiOrgs']
+                    ],
                 ],
 
             ],
@@ -167,6 +172,51 @@ class StrutturaController extends Controller
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
+    }
+
+    /**
+     * Aggiunge un contatto ad un elemento di mas_rubrica
+     * @param  [type] $id [description]
+     * @return [type]     [description]
+     */
+    public function actionAddContattoRubrica($id){
+
+        $base_model = $this->findModel($id);
+        
+        $contatto = new \common\models\utility\UtlContatto;
+        $contatto->load(Yii::$app->request->post());
+        if($contatto->save()):
+            $base_model->link('contatto', $contatto, ['use_type'=>$contatto->use_type, 'type'=>$contatto->type]);
+        endif;
+
+        $base_model->syncEverbridge();
+
+        return $this->redirect(['view','id'=>$id]);
+
+    }
+
+    /**
+     * Elimina un contatto di un elemento di rubrica
+     * @param  [type] $id   [description]
+     * @return [type]                   [description]
+     */
+    public function actionDeleteContattoRubrica( $id ){
+
+
+        $c = \common\models\struttura\ConStrutturaContatto::find()->where(['id'=>$id])->one();
+        if($c) {
+            
+            $id_odv = $c->id_struttura;
+            $c->delete();
+
+            $base_model = $this->findModel($id_odv);
+            $base_model->syncEverbridge();
+        } else {
+            throw new \yii\web\HttpException(404, "Recapito non trovato");
+            
+        }
+        
+        return $this->redirect(['view', 'id'=>$base_model->id]);
     }
 
 }

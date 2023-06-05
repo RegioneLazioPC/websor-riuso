@@ -25,6 +25,7 @@ $select2Options = [
 $volontari = VolVolontario::find()
 ->joinWith('anagrafica', ['utl_anagrafica.id' => 'vol_volontario.id_anagrafica'])
 ->where(['id_organizzazione'=>$organizzazione])
+->andWhere(['operativo'=>true])
 ->orderBy(['utl_anagrafica.cognome'=>SORT_ASC, 'utl_anagrafica.nome' => SORT_ASC]);
 
 

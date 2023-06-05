@@ -99,12 +99,12 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
             [
                 'attribute' => 'user.created_at',
-                'format' => 'date',
-                'label' => 'Data creazione'
+                'format' => 'datetime',
+                'label' => 'Data registrazione'
             ],
             [
                 'attribute' => 'user.updated_at',
-                'format' => 'date',
+                'format' => 'datetime',
                 'label' => 'Data ultimo aggiornamento',
             ]
 

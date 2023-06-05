@@ -28,19 +28,26 @@ return [
         'mas' => [
             'basePath' => '@app/modules/mas',
             'class' => 'api\modules\mas\Module'
+        ],
+        'cap' => [
+            'basePath' => '@app/modules/cap',
+            'class' => 'api\modules\cap\Module'
         ]
     ],
     'components' => [
+        'consumer' => [
+            'class' => 'common\models\cap\CapConsumer'
+        ],
         'user' => [
             'identityClass' => 'common\models\User',
             'enableAutoLogin' => false,
         ],
         'log' => [
-            'traceLevel' => YII_DEBUG ? 3 : 0,
+            'traceLevel' => YII_DEBUG ? 1 : 1,
             'targets' => [
                 [
                     'class' => 'yii\log\FileTarget',
-                    'logFile' => '@api/runtime/logs/common/'.date('Y_m_d').'.log',
+                    'logFile' => '@api/runtime/logs/common/' . date('Y_m_d') . '.log',
                     'levels' => ['error', 'warning'],
                 ],
                 [
@@ -48,7 +55,7 @@ return [
                     'levels' => ['info', 'error'],
                     'categories' => ['api'],
                     //'logFile' => '@app/runtime/logs/api.log',
-                    'logFile' => '@api/runtime/logs/app/'.date('Y_m_d').'.log',
+                    'logFile' => '@api/runtime/logs/app/' . date('Y_m_d') . '.log',
                     'maxFileSize' => 1024 * 2,
                     //'maxLogFiles' => 50,
                 ],
@@ -56,14 +63,14 @@ return [
                     'class' => 'yii\log\FileTarget',
                     'levels' => ['info', 'error', 'warning'],
                     'categories' => ['sync'],
-                    'logFile' => '@api/runtime/logs/mgo_sync/'.date('Y_m_d').'.log',
+                    'logFile' => '@api/runtime/logs/mgo_sync/' . date('Y_m_d') . '.log',
                     'maxFileSize' => 1024 * 2
                 ],
                 [
                     'class' => 'yii\log\FileTarget',
                     'levels' => ['info', 'error'],
                     'categories' => ['map'],
-                    'logFile' => '@api/runtime/logs/map/'.date('Y_m_d').'.log',
+                    'logFile' => '@api/runtime/logs/map/' . date('Y_m_d') . '.log',
                     'maxFileSize' => 1024 * 2,
                     //'maxLogFiles' => 50,
                 ],
@@ -96,7 +103,7 @@ return [
                 $headers->add('Access-Control-Allow-Headers', 'Content-Type');
                 $headers->add('Access-Control-Allow-Headers', 'Range');
                 //$headers->add('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT', 'DELETE');
-                
+
                 $headers->add('Access-Control-Allow-Methods', 'POST');
                 $headers->add('Access-Control-Allow-Methods', 'PUT');
                 $headers->add('Access-Control-Allow-Methods', 'GET');
@@ -118,9 +125,6 @@ return [
                 $headers->add('Access-Control-Expose-Headers', 'Content-Encoding');
                 $headers->add('Access-Control-Expose-Headers', 'Content-Length');
                 $headers->add('Access-Control-Expose-Headers', 'Content-Range');
-
-                
-                
             },
         ],
 
@@ -130,6 +134,34 @@ return [
             'showScriptName' => false,
             'rules' => [
                 [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'cap/message',
+                    'except' => ['patch', 'head'],
+                    'extraPatterns' => [
+                        'OPTIONS <url:.*>' => 'options',
+                        'GET <identifier>.cap' => 'view'
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'cap/rss',
+                    'except' => ['patch', 'head'],
+                    'extraPatterns' => [
+                        'OPTIONS <url:.*>' => 'options',
+                    ],
+                ],
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'cap/atom',
+                    'except' => ['patch', 'head'],
+                    'extraPatterns' => [
+                        'OPTIONS <url:.*>' => 'options',
+                    ],
+                ],
+                [
                     // APP CONFIG SERVICE
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,
@@ -138,7 +170,9 @@ return [
                     'extraPatterns' => [
                         'GET confirm' => 'confirm',
                         'GET profile' => 'profile',
+                        'POST build-token-from-cf' => 'build-token-from-cf',
                         'POST login' => 'login',
+                        'POST set-user-token' => 'set-user-token',
                         'GET reset' => 'reset',
                         'POST reset' => 'reset',
                         'POST recovery' => 'recovery',
@@ -153,6 +187,19 @@ return [
                         'POST list-by-user' => 'list-by-user',
                         //'POST check-is-correct-region' => 'check-is-correct-region'
                     ]
+                ],
+                [
+                    // APP CONFIG SERVICE
+                    'class' => 'yii\rest\UrlRule',
+                    'pluralize' => false,
+                    'controller' => 'v1/attivazioni',
+                    'except' => ['patch', 'head'],
+                    'extraPatterns' => [
+                        'OPTIONS <url:.*>' => 'options',
+                        'GET to-check' => 'to-check',
+                        'GET <id>/avaible-resources' => 'avaible-resources',
+                        'POST <id>/feedback' => 'feedback'
+                    ],
                 ],
                 [
                     'class' => 'yii\rest\UrlRule',
@@ -187,11 +234,11 @@ return [
                     'pluralize' => false,
                     'controller' => 'v1/notifications',
                     'extraPatterns' => [
-                        //'GET /' => 'index'                        
+                        //'GET /' => 'index'
                     ]
                 ],
                 /*
-                
+
                     Utilizzare modulo "map"
                     [
                         'class' => 'yii\rest\UrlRule',
@@ -238,7 +285,7 @@ return [
                         'POST add' => 'add',
                     ]
                 ],
-                
+
                 [
                     'class' => 'yii\rest\UrlRule',
                     'pluralize' => false,

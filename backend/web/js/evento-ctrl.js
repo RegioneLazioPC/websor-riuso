@@ -6,6 +6,7 @@ angular.module('evento', ['region.helpers', 'mapAngular'])
     selfScope.comune = "";
 
     selfScope.stato = "Non gestito";
+    selfScope.sottotipologia_evento = null;
 
     selfScope.checkBoxes = [];
 
@@ -27,11 +28,31 @@ angular.module('evento', ['region.helpers', 'mapAngular'])
         events: {
             tilesloaded: function (map) {
                 $scope.$apply(function () {
-                    console.log('map', map)
                     $scope.mapInstance = map;
                 });                
             }
         }
+    }
+
+
+    selfScope.id_tipo_colonna = null;
+    selfScope.n_elicotteri = 0;
+
+
+    $scope.loadInitSottotipologia = function(id, id_colonna_fumo, n_elicotteri) {
+        selfScope.sottotipologia_evento = id
+        selfScope.id_tipo_colonna = id_colonna_fumo.toString()
+        selfScope.n_elicotteri = parseInt(n_elicotteri)
+    }
+
+    $scope.changedSottotipo = function() {
+        
+    }
+
+    $scope.needPopupEvt = function() {
+        return selfScope.stato == 'Chiuso' && 
+        parseInt(selfScope.sottotipologia_evento) == selfScope.id_tipo_colonna && 
+        selfScope.n_elicotteri > 0
     }
 
     // uiGmapGoogleMapApi is a promise.
@@ -147,7 +168,6 @@ angular.module('evento', ['region.helpers', 'mapAngular'])
             //selfScope.comune
             AutocompleteService.getComune( selfScope.comune )
             .then(function(res){
-                console.log('comune', res)
                 if(res.data) {
                     $scope.comune_name = res.data.comune
                     $scope.provincia_sigla = res.data.provincia_sigla
@@ -162,11 +182,9 @@ angular.module('evento', ['region.helpers', 'mapAngular'])
 
 
         $scope.loadResults = function() {
-            console.log('carico risultati')
             if(selfScope.address.length > 3) {
                 AutocompleteService.search($scope.comune_name, $scope.provincia_sigla, selfScope.address, $scope.csrf)
                 .then(function(res){
-                    console.log('addresses', res);
                     $scope.results = res.data;
 
                 }).catch(function(err){
@@ -181,7 +199,6 @@ angular.module('evento', ['region.helpers', 'mapAngular'])
             if(selfScope.toponimo.length > 3) {
                 AutocompleteService.searchToponimo($scope.comune_name, $scope.provincia_sigla, selfScope.toponimo, $scope.csrf)
                 .then(function(res){
-                    console.log('toponimi', res);
                     $scope.toponimo_results = res.data;
 
                 }).catch(function(err){

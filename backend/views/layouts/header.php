@@ -1,4 +1,6 @@
 <?php
+
+use common\components\FilteredActions;
 use common\models\UtlOperatorePc;
 use common\models\UtlSegnalazione;
 use yii\helpers\Html;
@@ -7,15 +9,16 @@ use yii\helpers\Url;
 
 /* @var $this \yii\web\View */
 /* @var $content string */
+
 $lastSegnalazioni = UtlSegnalazione::getLastSegnalazione();
 
 $can_view_segnalazioni = Yii::$app->user->can('listSegnalazioni');
 
-if($can_view_segnalazioni) {
+
+if ($can_view_segnalazioni) {
 
     $js = "
 
-    
     $(document).ready(function(){
         var segnalazioni_ids = [];
         var n_segnalazioni = 0;
@@ -24,7 +27,7 @@ if($can_view_segnalazioni) {
         var _a = $('#blinkeblunk');
 
         function beep() {
-            var audio = new Audio('". Url::home(true) . "beep.mp3');
+            var audio = new Audio('" . Url::home(true) . "beep.mp3');
             audio.play();
         }
 
@@ -79,8 +82,8 @@ if($can_view_segnalazioni) {
 
 <header class="main-header">
 
-    
-    
+
+
     <?= Html::a('<span class="logo-mini" style="height: 83px;">#W<strong>S</strong></span><span class="logo-lg">' . Yii::$app->name . '</span>', Yii::$app->homeUrl, ['class' => 'logo']) ?>
 
     <nav class="navbar navbar-static-top" role="navigation">
@@ -89,16 +92,16 @@ if($can_view_segnalazioni) {
             <span class="sr-only">Toggle navigation</span>
         </a>
 
-        <div class="main-title hidden-xs hidden-md" <?php if(!$can_view_segnalazioni) echo 'style="padding-top: 16px;"';?>>
+        <div class="main-title hidden-xs hidden-md" <?php if (!$can_view_segnalazioni) echo 'style="padding-top: 16px;"'; ?>>
             <?php echo Html::img('@web/images/logo_regione.gif'); ?>
-            <span class="text-uppercase">Protezione Civile Regione <?= Yii::$app->params['REGION_NAME'];?></span>
+            <span class="text-uppercase">Protezione Civile <?php echo Yii::$app->FilteredActions->getAppName() ?></span>
             <?php echo Html::img('@web/images/logo.png'); ?>
             <p class="hidden-xs hidden-sm hidden-md" style="font-size: 20px;">
-               <?php if($can_view_segnalazioni)  {
+                <?php if ($can_view_segnalazioni) {
                 ?>
-                <a class="" id="blinkeblunk" href="<?= Yii::$app->urlManager->createUrl('/segnalazione') ?>">
-                    <strong id="count_segnalazioni">0</strong> segnalazioni non lavorate
-                </a>
+                    <a class="" id="blinkeblunk" href="<?= Yii::$app->urlManager->createUrl('/segnalazione') ?>">
+                        <strong id="count_segnalazioni">0</strong> segnalazioni non lavorate
+                    </a>
                 <?php }
                 ?>
             </p>
@@ -118,12 +121,31 @@ if($can_view_segnalazioni) {
                         <li>
                             <ul class="menu">
 
-                                <?php foreach($lastSegnalazioni as $segnalazione): ?>
-                                    
+                                <?php 
+                                $tipi_segnalazioni = \common\models\UtlTipologia::find()->asArray()->all();
+                                $tipi_segnalazioni = \yii\helpers\ArrayHelper::index($tipi_segnalazioni, 'id');
+                                
+                                foreach ($lastSegnalazioni as $segnalazione) :
+                                    $nome_tipo = $segnalazione->tipologia_evento; 
+                                    try {
+                                        if(empty($segnalazione->tipologia_evento)) {
+                                            $nome_tipo = 'SOS';
+                                        } else {
+                                            $tipo_segnalazione = $tipi_segnalazioni[$segnalazione->tipologia_evento];
+                                        
+                                            $nome_tipo = Html::encode($tipo_segnalazione['tipologia']);
+                                        }
+                                        
+                                        
+                                    } catch(\Exception $e) {
+                                        throw $e;
+                                    }
+                                    ?>
+
                                     <li>
-                                        <a href="<?= Yii::$app->urlManager->createUrl('/segnalazione/view?id='.$segnalazione->id) ?>">
+                                        <a href="<?= Yii::$app->urlManager->createUrl('/segnalazione/view?id=' . $segnalazione->id) ?>">
                                             <em class="fa fa-warning text-yellow"></em>
-                                            <strong><?php echo Html::encode(@$segnalazione->tipologia->tipologia); ?></strong> - <?= Html::encode(@$segnalazione->note); ?>
+                                            <strong><?php echo $nome_tipo; ?></strong> - <?= Html::encode(@$segnalazione->note); ?>
                                             <p><?php echo Html::encode(@$segnalazione->dataora_segnalazione); ?></p>
                                         </a>
                                     </li>
@@ -138,24 +160,24 @@ if($can_view_segnalazioni) {
 
                 <li class="dropdown user user-menu">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                        <img src="<?= $directoryAsset ?>/img/avatar5.png" class="user-image" alt="User Image"/>
+                        <img src="<?= $directoryAsset ?>/img/avatar5.png" class="user-image" alt="User Image" style="float: none; margin-top: -5px !important;" />
                         <span class="hidden-xs">
-                            
+
                             <?php
-                            if(!empty(Yii::$app->user->identity->id)):
+                            if (!empty(Yii::$app->user->identity->id)) :
                                 $operatore = UtlOperatorePc::find()->where(['iduser' => Yii::$app->user->identity->id])->one();
-                                echo Html::encode(@$operatore->anagrafica->nome.' '.@$operatore->anagrafica->cognome);
+                                echo Html::encode(@$operatore->anagrafica->nome . ' ' . @$operatore->anagrafica->cognome);
                             endif;
                             ?>
                         </span>
                     </a>
                     <ul class="dropdown-menu">
-                        
+
                         <li class="user-header">
                             <p>
-                                <?php echo Html::encode(@$operatore->anagrafica->nome.' '.@$operatore->anagrafica->cognome); ?><br>
-                                Matricola N. <?php echo Html::encode( @Yii::$app->user->identity->username);?><br>
-                                <?php echo Html::encode(@$operatore->ruolo);?>
+                                <?php echo Html::encode(@$operatore->anagrafica->nome . ' ' . @$operatore->anagrafica->cognome); ?><br>
+                                Matricola N. <?php echo Html::encode(@Yii::$app->user->identity->username); ?><br>
+                                <?php echo Html::encode(@$operatore->ruolo); ?>
                                 <small>Utente attivo</small>
                             </p>
                         </li>

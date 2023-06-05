@@ -20,7 +20,7 @@ use yii\bootstrap\Modal;
 $model->title = "";
 
 
-$model->channel_fax = true;
+$model->channel_fax = false;
 $model->channel_mail = true;
 $model->channel_sms = true;
 $model->channel_push = true;
@@ -56,7 +56,7 @@ $model->channel_pec = true;
 				    	'accept'=>implode(", ", MasMessage::validMessageMimes())/*"application/pdf"*/, 'ng-model'=>'ctrl.mediaFile',
 				    	'onchange'=>"angular.element(this).scope().fileNameChanged(this)"
 				]])
-				    ->label('Inserisci documento pdf'); 
+				    ->label('Inserisci documento'); 
 			    ?>	
 			   
 			    <?php 

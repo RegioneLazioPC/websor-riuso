@@ -22,7 +22,8 @@ $this->title = 'N. Protocollo ' . $model->num_protocollo;
                     [
                         'label' => 'Segnalatore',
                         'attribute' =>'idutente',
-                        'value' => (!empty($model->utente) && !empty($model->utente->anagrafica) && !empty($model->utente->anagrafica->nome)) ? $model->utente->anagrafica->nome.' '.$model->utente->anagrafica->cognome :  ""
+                        'value' => $model->nome_segnalatore . " " . $model->cognome_segnalatore/*
+                        'value' => (!empty($model->utente) && !empty($model->utente->anagrafica) && !empty($model->utente->anagrafica->nome)) ? $model->utente->anagrafica->nome.' '.$model->utente->anagrafica->cognome :  ""*/
                     ],
                     [
                         'label' => 'Tipologia Evento',

@@ -113,6 +113,10 @@ class ConVolontarioIngaggio extends \yii\db\ActiveRecord
 
     }
 
+    public function extraFields() {
+        return ['volontario', 'ingaggio'];
+    }
+
     /**
      * @return \yii\db\ActiveQuery
      */

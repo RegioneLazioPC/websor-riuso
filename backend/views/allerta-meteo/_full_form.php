@@ -25,7 +25,7 @@ $messaggio->title = "Allertamento del sistema di Protezione Civile Regionale del
 $model->data_allerta = \DateTime::createFromFormat('Y-m-d', date("Y-m-d", time()))->format('d-m-Y');
 
 
-$messaggio->channel_fax = true;
+$messaggio->channel_fax = false;
 $messaggio->channel_mail = true;
 $messaggio->channel_sms = true;
 $messaggio->channel_push = true;
@@ -76,7 +76,7 @@ $messaggio->channel_pec = true;
 				    	'ng-model'=>'ctrl.mediaFile',
 				    	'onchange'=>"angular.element(this).scope().fileNameChanged(this)"
 				]])
-				    ->label('Inserisci documento pdf'); 
+				    ->label('Inserisci documento'); 
 			    ?>	
 
 			    <?= 

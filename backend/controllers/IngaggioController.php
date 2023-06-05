@@ -44,7 +44,11 @@ class IngaggioController extends Controller
                 'actions' => [
                     'delete' => ['POST'],
                     'search-organizzazione' => ['GET'],
-                    'ingaggia' => ['GET']
+                    'da-verificare' => ['GET'],
+                    'ingaggia' => ['GET'],
+                    'add-feedback-volontario' => ['POST'],
+                    'add-all-feedback-volontari' => ['POST'],
+                    'use-feedback-resource' => ['POST']
                 ],
             ],
             'access' => [
@@ -64,6 +68,11 @@ class IngaggioController extends Controller
                     ],
                     [
                         'allow' => true,
+                        'actions' => ['da-verificare'],
+                        'permissions' => ['listAttivazioniToCheck']
+                    ],
+                    [
+                        'allow' => true,
                         'actions' => ['add-volontario', 'update', 'view', 'update-volontario', 'delete-volontario'],
                         'permissions' => ['updateIngaggio']
                     ],
@@ -76,6 +85,11 @@ class IngaggioController extends Controller
                         'allow' => true,
                         'actions' => ['change-data'],
                         'permissions' => ['adminPermissions', 'changeDateAttivazioni']
+                    ],
+                    [
+                        'allow' => true,
+                        'actions' => ['add-feedback-volontario', 'add-all-feedback-volontari','use-feedback-resource'],
+                        'permissions' => ['adminPermissions', 'editAttivazioniToCheck']
                     ]
                 ],
 
@@ -98,6 +112,197 @@ class IngaggioController extends Controller
         ]);
     }
 
+    /**
+     * Lists all UtlIngaggio models.
+     * @return mixed
+     */
+    public function actionDaVerificare()
+    {
+        $searchModel = new UtlIngaggioSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, true);
+
+        return $this->render('da-verificare', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    /**
+     * Aggiungi volontario da feedback rl
+     * @return [type] [description]
+     */
+    public function actionAddFeedbackVolontario($id, $id_volontario, $from) {
+        $trans = Yii::$app->db->beginTransaction();
+
+        try {
+            $ingaggio = UtlIngaggio::findOne($id);
+            if(!$ingaggio) throw new \yii\web\HttpException(404, "Attivazione non trovata");
+
+            if(empty($ingaggio->feedbackRl)) throw new \yii\web\HttpException(404, "Feedback non fornito");
+
+            $volontari_inseriti = $ingaggio->getVolontari()->all();
+            $id_inseriti = [];
+            foreach ($volontari_inseriti as $v) $id_inseriti[$v->id] = true;
+
+            if(!empty($ingaggio->feedbackRl->volontari)) {
+                foreach ($ingaggio->feedbackRl->volontari as $volontario) {
+                    if($volontario['id'] == $id_volontario) {
+
+                        if(!isset($id_inseriti[$volontario['id']])) {
+                            $vol_obj = VolVolontario::findOne($volontario['id']);
+                            if(!$vol_obj) continue;
+
+                            $con = new ConVolontarioIngaggio;
+                            $con->id_volontario = $volontario['id'];
+                            $con->refund = $volontario['refund'];
+                            $con->id_ingaggio = $ingaggio->id;
+                            $con->datore_di_lavoro = $vol_obj->datore_di_lavoro;
+                            if(!$con->save()) {
+                                Yii::error("Errore inserimento volontario " . json_encode($con->getErrors()));
+                                continue;
+                            }
+                        }
+
+                    } else {
+                        continue;
+                    }
+                }
+            }
+            $trans->commit();
+
+        } catch(\Exception $e) {
+            $trans->rollBack();
+            Yii::error($e);
+            Yii::$app->session->setFlash('error_feedback_attivazione_'.$id, $e->getMessage());
+        }
+
+        return $this->redirect(['ingaggio/'.$from, 'id'=>$id]);
+    }
+
+    /**
+     * Aggiungi tutti i volontari inseriti dal rl
+     * @param  [type] $id [description]
+     * @return [type]     [description]
+     */
+    public function actionAddAllFeedbackVolontari($id, $from) {
+
+        $trans = Yii::$app->db->beginTransaction();
+
+        try {
+            
+            $ingaggio = UtlIngaggio::findOne($id);
+            if(!$ingaggio) throw new \yii\web\HttpException(404, "Attivazione non trovata");
+
+            if(empty($ingaggio->feedbackRl)) throw new \yii\web\HttpException(404, "Feedback non fornito");
+
+            $volontari_inseriti = $ingaggio->getVolontari()->all();
+            $id_inseriti = [];
+            foreach ($volontari_inseriti as $v) $id_inseriti[$v->id] = true;
+
+            if(!empty($ingaggio->feedbackRl->volontari)) {
+                foreach ($ingaggio->feedbackRl->volontari as $volontario) {
+                    if(!isset($id_inseriti[$volontario['id']])) {
+                        $vol_obj = VolVolontario::findOne($volontario['id']);
+                        if(!$vol_obj) continue;
+
+                        $con = new ConVolontarioIngaggio;
+                        $con->id_volontario = $volontario['id'];
+                        $con->refund = $volontario['refund'];
+                        $con->id_ingaggio = $ingaggio->id;
+                        $con->datore_di_lavoro = $vol_obj->datore_di_lavoro;
+                        if(!$con->save()) {
+                            Yii::error("Errore inserimento volontario " . json_encode($con->getErrors()));
+                            continue;
+                        }
+                    }
+                }
+            }
+            $trans->commit();
+
+        } catch(\Exception $e) {
+            $trans->rollBack();
+            Yii::error($e);
+            Yii::$app->session->setFlash('error_feedback_attivazione_'.$id, $e->getMessage());
+
+        }
+
+        return $this->redirect(['ingaggio/'.$from, 'id'=>$id]);
+    }
+
+    /**
+     * Aggiungi tutti i volontari inseriti dal rluse-feedback-resource
+     * @param  [type] $id [description]
+     * @return [type]     [description]
+     */
+    public function actionUseFeedbackResource($id, $from) {
+
+        $trans = Yii::$app->db->beginTransaction();
+
+        try {
+            $ingaggio = UtlIngaggio::findOne($id);
+            if(!$ingaggio) throw new \yii\web\HttpException(404, "Attivazione non trovata");
+
+            if(empty($ingaggio->feedbackRl)) throw new \yii\web\HttpException(404, "Feedback non fornito");
+
+            if(empty($ingaggio->feedbackRl->risorsa)) throw new \yii\web\HttpException(404, "Risorsa non fornita");
+
+            $ingaggio_field = null;
+            $model_id = null;
+            $old = null;
+
+            if(!empty($ingaggio->idautomezzo)) {
+                $risorsa = \common\models\UtlAutomezzo::findOne($ingaggio->feedbackRl->risorsa['id']);
+                $model_id = $ingaggio->idautomezzo;
+                $ingaggio_field = 'idautomezzo';
+                $old = \common\models\UtlAutomezzo::findOne($ingaggio->idautomezzo);
+            } elseif(!empty($ingaggio->idattrezzatura)) {
+                $risorsa = \common\models\UtlAttrezzatura::findOne($ingaggio->feedbackRl->risorsa['id']);
+                $model_id = $ingaggio->idattrezzatura;
+                $ingaggio_field = 'idattrezzatura';
+                $old = \common\models\UtlAttrezzatura::findOne($ingaggio->idattrezzatura);
+            }
+
+            if(!$risorsa) throw new \yii\web\HttpException(404, "Risorsa non trovata");
+
+            if($risorsa->id == $model_id || $risorsa->engaged) throw new \yii\web\HttpException(422, "Risorsa non valida");
+
+            $ingaggio->$ingaggio_field = $risorsa->id;
+            if(!$ingaggio->save()) {
+                Yii::error($ingaggio->getErrors());
+                    throw new \yii\web\HttpException(422, "Errore aggiornamento attivazione, controllare i log " . date('Y-m-d H:i:s') . ' ' . json_encode($ingaggio->getErrors()));
+            }
+
+            // stati di chiusura
+            // devo svincolare la vecchia risorsa che aveva engaged = true
+            // e impostare true a quella nuova
+            if(!in_array($ingaggio->stato, [2,3])) {
+                
+                $risorsa->engaged = true;
+                if(!$risorsa->save()) {
+                    Yii::error($risorsa->getErrors());
+                        throw new \yii\web\HttpException(422, "Errore aggiornamento risorsa, controllare i log " . date('Y-m-d H:i:s') . ' ' . json_encode($risorsa->getErrors()));
+                }
+
+                if($old) {
+                    if(!empty($ingaggio->idautomezzo)) {
+                        \common\models\UtlAutomezzo::updateAll(['engaged'=>false], 'id = '.intval($model_id));
+                    } elseif(!empty($ingaggio->idattrezzatura)) {
+                        \common\models\UtlAttrezzatura::updateAll(['engaged'=>false], 'id = '.intval($model_id));
+                    }
+                }
+            }
+            
+            $trans->commit();
+
+        } catch(\Exception $e) {
+            $trans->rollBack();
+            Yii::error($e);
+            Yii::$app->session->setFlash('error_feedback_attivazione_'.$id, $e->getMessage());
+            //throw $e;
+        }
+
+        return $this->redirect(['ingaggio/'.$from, 'id'=>$id]);
+    }
 
     public function actionAddVolontario($id_ingaggio)
     {
@@ -255,6 +460,7 @@ class IngaggioController extends Controller
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
+        $old_stato = $model->stato;
         
         $evento = $model->getEvento()->one();
         if( $evento->stato == 'Chiuso' ) {
@@ -270,8 +476,13 @@ class IngaggioController extends Controller
             try {
 
                 $model->load($post_data);
+
                 if(!$model->save()) {
                     throw new \Exception("Errore " . json_encode($model->getErrors()), 1);
+                }
+
+                if($old_stato != $model->stato && $model->stato == 1) {
+                    \common\models\cap\CapExposedMessage::generateFromEvent($evento, 'Update attivazione');
                 }
 
                 $dbTrans->commit();
@@ -322,12 +533,15 @@ class IngaggioController extends Controller
 
             $conn = \Yii::$app->db;
             $dbTrans = $conn->beginTransaction();
+
+            $need_update_cap_message = false;
             try {
                 
                 if(!empty($post_data['UtlIngaggio']['closed_at'])) {
                     $closed_at = \DateTime::createFromFormat('d-m-Y H:i', $post_data['UtlIngaggio']['closed_at']);
                     if(is_bool($closed_at)) throw new \Exception("Data di chiusura non valida", 1);
                     $post_data['UtlIngaggio']['closed_at'] = $closed_at->format('Y-m-d H:i');
+                    $need_update_cap_message = true;
                 }
 
                 if(!empty($post_data['UtlIngaggio']['created_at'])) {
@@ -341,6 +555,7 @@ class IngaggioController extends Controller
                     throw new \Exception("Errore " . json_encode($model->getErrors()), 1);
                 }
 
+                if($need_update_cap_message) \common\models\cap\CapExposedMessage::generateFromEvent($evento, 'Update attivazione');
 
                 $dbTrans->commit();
                 return $this->redirect(['view', 'id' => $model->id]);
@@ -382,7 +597,14 @@ class IngaggioController extends Controller
     {
         $model = $this->findModel($id);
         $idevento = $model->idevento;
+        
+
+        foreach (ConVolontarioIngaggio::find()->where(['id_ingaggio'=>$id])->all() as $con_v) {
+            $con_v->delete();
+        }
         $model->delete();
+
+
 
         return (!empty($idevento)) ? 
             $this->redirect(['evento/view', 'id'=>$idevento])
@@ -421,37 +643,36 @@ class IngaggioController extends Controller
 
         $key = $params['lat']."_".$params['lon'];
         
-        
-
         $command = $connection->createCommand("
-            SELECT * FROM (WITH point_selected AS (SELECT 
-                    (st_setsrid
-                        (st_makepoint
-                            (:lon::DOUBLE precision, :lat::DOUBLE precision), 4326
-                        )
-                    ) AS geom
-                ) 
-                SELECT ROW_NUMBER() 
-                    OVER(ORDER BY dc.agg_cost ASC) n_ord, dc.start_vid, dc.end_vid, 
-                round( CAST(float8 (dc.agg_cost / 1000)::text AS numeric), 2) AS dist_km, 
-                f.* 
-                FROM 
-                pgr_dijkstracost( 'SELECT gid as id, source, target, length_m as cost FROM routing.osm_ways'::text, 
-                    ( SELECT vert.id FROM routing.osm_ways_vertices_pgr vert 
-                        ORDER BY (vert.the_geom::geography <-> (SELECT geom FROM point_selected)::geography) LIMIT 1 
-                    ), 
-                    ARRAY( SELECT nvf.id_vert FROM view_routing_organizzazioni nvf ), 
-                    false)
-                 dc(start_vid, end_vid, agg_cost) 
-            INNER JOIN view_routing_organizzazioni near ON near.id_vert = dc.end_vid 
-            INNER JOIN view_organizzazioni f ON f.id_sede = near.id_sede WHERE 
-            tipologia_risorsa='sede'
-            ORDER BY n_ord ASC LIMIT 10000 ) AS \"vtable\"
-            ")
-        ->bindValue ( ':lat', floatval($params['lat']) )
-        ->bindValue ( ':lon', floatval($params['lon']) );
+                SELECT * FROM (WITH point_selected AS (SELECT 
+                        (st_setsrid
+                            (st_makepoint
+                                (:lon::DOUBLE precision, :lat::DOUBLE precision), 4326
+                            )
+                        ) AS geom
+                    ) 
+                    SELECT ROW_NUMBER() 
+                        OVER(ORDER BY dc.agg_cost ASC) n_ord, dc.start_vid, dc.end_vid, 
+                    round( CAST(float8 (dc.agg_cost / 1000)::text AS numeric), 2) AS dist_km, 
+                    f.* 
+                    FROM 
+                    pgr_dijkstracost( 'SELECT gid as id, source, target, length_m as cost FROM routing.osm_ways'::text, 
+                        ( SELECT vert.id FROM routing.osm_ways_vertices_pgr vert
+                            WHERE vert.main_network = true  
+                            ORDER BY (vert.the_geom::geography <-> (SELECT geom FROM point_selected)::geography) LIMIT 1 
+                        ), 
+                        ARRAY( SELECT nvf.id_vert FROM view_routing_organizzazioni nvf ), 
+                        false)
+                     dc(start_vid, end_vid, agg_cost) 
+                INNER JOIN view_routing_organizzazioni near ON near.id_vert = dc.end_vid 
+                INNER JOIN view_organizzazioni f ON f.id_sede = near.id_sede WHERE 
+                tipologia_risorsa='sede'
+                ORDER BY n_ord ASC LIMIT 10000 ) AS \"vtable\"
+                ")
+            ->bindValue ( ':lat', floatval($params['lat']) )
+            ->bindValue ( ':lon', floatval($params['lon']) );
             
-            
+        
         $result = $command->queryAll();
         $sedi = [];
         foreach ($result as $r) {
@@ -500,7 +721,7 @@ class IngaggioController extends Controller
         ];
         $query = UtlIngaggioSearchForm::find()
         ->select( $fields )
-        ->with(['sezioneSpecialistica', 'contattiAttivazioni', 'contattiAttivazioni.contatto'])
+        ->with(['sezioneSpecialistica', 'contattiAttivazioni', 'contattiAttivazioni.contatto', 'mezzoAttivatoDaAltraSala'])
         ->groupBy($group);
 
         
@@ -518,8 +739,7 @@ class IngaggioController extends Controller
             
         }
         
-        
-        if(Yii::$app->request->get('id_organizzazione')) $query->andWhere(['id_organizzazione'=>$params['id_organizzazione']]);
+        if(Yii::$app->request->get('id_organizzazione')) $query->andWhere(['view_organizzazioni.id_organizzazione'=>$params['id_organizzazione']]);
 
         /**
          * è selezionata una categoria e non tipologia
@@ -614,6 +834,11 @@ class IngaggioController extends Controller
             ]);
         endif;
 
+        if(Yii::$app->request->get('capacita')) :
+
+            // sono presenti entrambi, devo cercare automezzi con attrezzatura
+            $query->andWhere(['>=', 'capacita', $params['capacita']]);
+        endif;
         
         /**
          * Ordinamento in base a mappatura definita nel model
@@ -712,11 +937,13 @@ class IngaggioController extends Controller
             $diarioEvento->idtask = 4; //DATI CABLATI NEL DB
             $diarioEvento->idevento = $ingaggio->idevento;
             $diarioEvento->note = $task_name.' '. $ingaggio->organizzazione->ref_id . " " . $ingaggio->organizzazione->denominazione ;
-            $diarioEvento->idoperatore = Yii::$app->user->identity->operatore->id;
+            $diarioEvento->idoperatore = (!empty(Yii::$app->user) && !empty(Yii::$app->user->identity) && !empty(Yii::$app->user->identity->operatore)) ? Yii::$app->user->identity->operatore->id : null;
 
             if(!($diarioEvento->save())){
                 return ['error'=>$diarioEvento->getErrors()];
             }
+
+            $ingaggio->sendPushAttivazione();
 
             $dbTrans->commit();
 

@@ -12,9 +12,10 @@ class m190125_105208_enable_vendor_form_rubrica extends Migration
      */
     public function safeUp()
     {
-        $this->addColumn('utl_contatto','vendor',$this->string(10));
-
         Yii::$app->db->createCommand("DROP VIEW IF EXISTS view_rubrica")->execute();
+
+        $this->addColumn('utl_contatto', 'vendor', $this->string(10));
+        
 
         Yii::$app->db->createCommand("CREATE VIEW view_rubrica as
             SELECT 
@@ -300,8 +301,7 @@ class m190125_105208_enable_vendor_form_rubrica extends Migration
             LEFT JOIN utl_indirizzo ON utl_indirizzo.id = mas_rubrica.id_indirizzo
             LEFT JOIN loc_comune on loc_comune.id = utl_indirizzo.id_comune
             LEFT JOIN loc_provincia on loc_provincia.id = loc_comune.id_provincia
-            WHERE utl_utente.device_token is not null and mas_rubrica.id is not null;"
-        )->execute();
+            WHERE utl_utente.device_token is not null and mas_rubrica.id is not null;")->execute();
     }
 
     /**
@@ -309,9 +309,9 @@ class m190125_105208_enable_vendor_form_rubrica extends Migration
      */
     public function safeDown()
     {
-        $this->dropColumn('utl_contatto','vendor');
-
         Yii::$app->db->createCommand("DROP VIEW IF EXISTS view_rubrica")->execute();
+
+        $this->dropColumn('utl_contatto', 'vendor');
 
         Yii::$app->db->createCommand("CREATE VIEW view_rubrica as
             SELECT 
@@ -597,8 +597,7 @@ class m190125_105208_enable_vendor_form_rubrica extends Migration
             LEFT JOIN utl_indirizzo ON utl_indirizzo.id = mas_rubrica.id_indirizzo
             LEFT JOIN loc_comune on loc_comune.id = utl_indirizzo.id_comune
             LEFT JOIN loc_provincia on loc_provincia.id = loc_comune.id_provincia
-            WHERE utl_utente.device_token is not null and mas_rubrica.id is not null;"
-        )->execute();
+            WHERE utl_utente.device_token is not null and mas_rubrica.id is not null;")->execute();
     }
 
     /*

@@ -799,7 +799,15 @@ class MasController extends Controller
 
                 if(!$invio->save()) throw new \Exception("Dati invio non validi");
 
-                
+                if(isset(Yii::$app->params['mas_version']) && Yii::$app->params['mas_version'] == 2) {
+                    $id_message_mas = \common\utils\MasV2Dispatcher::createMessage($model, $invio);
+                    $invio->mas_ref_id = (string) $id_message_mas;
+                    if(!$invio->save()) throw new \Exception("Errore creazione messaggio", 1);
+
+                    $invio->refresh();
+                }
+
+
                 $data = Yii::$app->request->post();
                 $contatti = [];
                 
@@ -903,36 +911,51 @@ class MasController extends Controller
                 
                 
 
-                echo Yii::$app->db->createCommand(
+                Yii::$app->db->createCommand(
                     'INSERT INTO con_mas_invio_contact(id_rubrica_contatto, tipo_rubrica_contatto, valore_rubrica_contatto, valore_riferimento, id_invio, channel, vendor) '.$q_s
                 )->execute();
 
+                if(isset(Yii::$app->params['mas_version']) && Yii::$app->params['mas_version'] == 2) {
+                    \common\utils\MasV2Dispatcher::addRecipients($query->query, $invio);
+                }
+
                 
+                
+                if(isset(Yii::$app->params['mas_version']) && Yii::$app->params['mas_version'] == 2) {
+            
+                    \common\utils\MasV2Dispatcher::sendMessage($invio);
+                    
+                } else {
+
+
+                    /**
+                     * Invio al dispatcher tutti i contatti
+                     * @var [type]
+                     */
+                    $contatti = ConMasInvioContact::find()
+                    ->select([
+                    'id','id_rubrica_contatto','tipo_rubrica_contatto','valore_rubrica_contatto','channel','vendor','valore_riferimento'
+                    ])
+                    ->addSelect(new Expression(intval($invio->id).' as id_invio'))
+                    ->addSelect(new Expression('0 as status'))
+                    ->addSelect(new Expression(time().' as created_at'))
+                    ->addSelect(new Expression(time().' as updated_at'))
+                    ->where(['id_invio'=>$invio->id]);
+
+
+                    $q_s = $contatti->createCommand()->getRawSql();
+                    $all_contacts = $contatti->asArray()->all();
+
+                    $dispatch = new \common\utils\MasDispatcher( $all_contacts, $invio );
+                    $res = $dispatch->initialize();
+
+                }
+
+                
+
+                //$invio->save();
+
                 $dbTrans->commit();
-
-
-                /**
-                 * Invio al dispatcher tutti i contatti
-                 * @var [type]
-                 */
-                $contatti = ConMasInvioContact::find()
-                ->select([
-                'id','id_rubrica_contatto','tipo_rubrica_contatto','valore_rubrica_contatto','channel','vendor','valore_riferimento'
-                ])
-                ->addSelect(new Expression(intval($invio->id).' as id_invio'))
-                ->addSelect(new Expression('0 as status'))
-                ->addSelect(new Expression(time().' as created_at'))
-                ->addSelect(new Expression(time().' as updated_at'))
-                ->where(['id_invio'=>$invio->id]);
-
-
-                $q_s = $contatti->createCommand()->getRawSql();
-                $all_contacts = $contatti->asArray()->all();
-
-                $dispatch = new \common\utils\MasDispatcher( $all_contacts, $invio );
-                $res = $dispatch->initialize();
-
-                
 
                 return $this->redirect(['view-invio', 'id_invio'=>$invio->id]);
                 
@@ -990,27 +1013,52 @@ class MasController extends Controller
 
         $invio = MasInvio::findOne($id_invio);
         if(!$invio) throw new \yii\web\HttpException(404, 'Invio non trovato');
-
+        
         $connection = Yii::$app->getDb();
-        $command = $connection->createCommand("SELECT 
-            con_mas_invio_contact.valore_rubrica_contatto, 
-            con_mas_invio_contact.valore_riferimento,  
-            con_mas_invio_contact.channel, 
-            (SELECT count(mas_single_send.id) FROM mas_single_send WHERE 
-            id_invio = :id_invio AND 
-            mas_single_send.id_con_mas_invio_contact = con_mas_invio_contact.id AND
-            mas_single_send.status in 
-            (".new \yii\db\Expression( implode(",", $const_mas_status) ).")) as inviato,
-                json_agg(json_build_object( 'status', mas_single_send.status, 'sent', mas_single_send.sent_time, 'feedback', mas_single_send.feedback_time ) ) as invii
+        if(empty($invio->mas_ref_id)) {
+            //V1
+            $command = $connection->createCommand("SELECT 
+                con_mas_invio_contact.valore_rubrica_contatto, 
+                con_mas_invio_contact.valore_riferimento,  
+                con_mas_invio_contact.channel, 
+                (SELECT count(mas_single_send.id) FROM mas_single_send WHERE 
+                id_invio = :id_invio AND 
+                mas_single_send.id_con_mas_invio_contact = con_mas_invio_contact.id AND
+                mas_single_send.status in 
+                (".new \yii\db\Expression( implode(",", $const_mas_status) ).")) as inviato,
+                    json_agg(json_build_object( 'status', mas_single_send.status, 'sent', mas_single_send.sent_time, 'feedback', mas_single_send.feedback_time ) ) as invii
+                    FROM con_mas_invio_contact
+                    LEFT JOIN mas_single_send on mas_single_send.id_con_mas_invio_contact = con_mas_invio_contact.id AND mas_single_send.id_invio = con_mas_invio_contact.id_invio
+                     WHERE con_mas_invio_contact.id_invio = :id_invio
+                     AND con_mas_invio_contact.channel = :channel
+                     GROUP by con_mas_invio_contact.valore_rubrica_contatto, con_mas_invio_contact.valore_riferimento, con_mas_invio_contact.channel, con_mas_invio_contact.id
+                    ;", [
+                ':id_invio' => intval($invio->id),
+                ':channel' => $channel
+            ]);
+        } else {
+            // V2
+            $command = $connection->createCommand("SELECT 
+                con_mas_invio_contact.valore_rubrica_contatto, 
+                con_mas_invio_contact.valore_riferimento,  
+                con_mas_invio_contact.channel, 
+                count(mas_v2_feedback.id) FILTER (WHERE 
+                    mas_v2_feedback.status in (".new \yii\db\Expression( implode(",", $const_mas_status) ).")
+                    ) as inviato,
+                json_agg(json_build_object( 'status', mas_v2_feedback.status, 'sent', mas_v2_feedback.sent_date::text, 'feedback', mas_v2_feedback.received_date::text, 'refuse', mas_v2_feedback.refused_date::text, 'status_string', mas_v2_feedback.status_string::text)) as invii
                 FROM con_mas_invio_contact
-                LEFT JOIN mas_single_send on mas_single_send.id_con_mas_invio_contact = con_mas_invio_contact.id AND mas_single_send.id_invio = con_mas_invio_contact.id_invio
+                LEFT JOIN mas_v2_feedback ON 
+                    mas_v2_feedback.recapito = con_mas_invio_contact.valore_rubrica_contatto AND 
+                    mas_v2_feedback.id_invio = con_mas_invio_contact.id_invio AND
+                    mas_v2_feedback.channel = con_mas_invio_contact.channel 
                  WHERE con_mas_invio_contact.id_invio = :id_invio
                  AND con_mas_invio_contact.channel = :channel
                  GROUP by con_mas_invio_contact.valore_rubrica_contatto, con_mas_invio_contact.valore_riferimento, con_mas_invio_contact.channel, con_mas_invio_contact.id
-                ;", [
-            ':id_invio' => intval($invio->id),
-            ':channel' => $channel
-        ]);
+                    ;", [
+                ':id_invio' => intval($invio->id),
+                ':channel' => $channel
+            ]);
+        }
 
         $result = $command->queryAll();
 
@@ -1042,15 +1090,29 @@ class MasController extends Controller
         foreach ($result as $dest) {
 
             $send_ = json_decode( $dest['invii'], true );
-            foreach ($send_ as $row) {
-                $arr = [
-                    $dest['valore_riferimento'],
-                    $dest['valore_rubrica_contatto'],
-                    ($dest['inviato'] > 0) ? 'Si' : 'No',
-                    (!empty($row['status'])) ? MasSingleSend::getStatoByNumber( $row['status'] ) : '',
-                    (!empty($row['status'])) ? ((!empty($row['sent'])) ? date('d-m-Y H:i:s', $row['sent']) : '') : '',
-                    (!empty($row['status'])) ? ((!empty($row['feedback'])) ? date('d-m-Y H:i:s', $row['feedback']) : '') : ''
-                ];
+            if(empty($invio->mas_ref_id)) {
+                foreach ($send_ as $row) {
+                    $arr = [
+                        $dest['valore_riferimento'],
+                        $dest['valore_rubrica_contatto'],
+                        ($dest['inviato'] > 0) ? 'Si' : 'No',
+                        (!empty($row['status'])) ? MasSingleSend::getStatoByNumber( $row['status'] ) : '',
+                        (!empty($row['status'])) ? ((!empty($row['sent'])) ? date('d-m-Y H:i:s', $row['sent']) : '') : '',
+                        (!empty($row['status'])) ? ((!empty($row['feedback'])) ? date('d-m-Y H:i:s', $row['feedback']) : '') : ''
+                    ];
+                }
+            } else {
+                foreach ($send_ as $row) {
+                    $arr = [
+                        $dest['valore_riferimento'],
+                        $dest['valore_rubrica_contatto'],
+                        ($dest['inviato'] > 0) ? 'Si' : 'No',
+                        $row['status_string'] ?? '',//(!empty($row['status'])) ? MasSingleSend::getStatoByNumberV2( $row['status'] ) : '',
+                        $row['sent'] ?? '',
+                        $row['feedback'] ?? $row['refuse'] ?? ''
+                    ];
+                }
+
             }
             fputcsv($file, $arr, "\t");            
             
@@ -1139,6 +1201,12 @@ class MasController extends Controller
                 $invio->data_invio = date("Y-m-d H:m:s", time());
 
                 if(!$invio->save()) throw new \Exception("Dati invio non validi");
+
+                if(isset(Yii::$app->params['mas_version']) && Yii::$app->params['mas_version'] == 2) {
+                    $id_message_mas = \common\utils\MasV2Dispatcher::createMessage($messaggio, $invio);
+                    $invio->mas_ref_id = (string) $id_message_mas;
+                    if(!$invio->save()) throw new \Exception("Errore creazione messaggio", 1);
+                }
 
                 /**
                  * @todo  from here
@@ -1279,9 +1347,26 @@ class MasController extends Controller
 
         $plain = $search->createCommand()->getRawSql();
 
-        Yii::$app->db->createCommand(
-            'INSERT INTO con_mas_invio_contact(id_rubrica_contatto, tipo_rubrica_contatto, valore_rubrica_contatto, valore_riferimento, ext_id, everbridge_identifier, id_invio, channel, vendor) ' . $plain . ' ON CONFLICT (id_rubrica_contatto,tipo_rubrica_contatto,valore_rubrica_contatto,id_invio) DO NOTHING '
-        )->execute();
+        $trans = Yii::$app->db->beginTransaction();
+
+        try {
+
+            Yii::$app->db->createCommand(
+                'INSERT INTO con_mas_invio_contact(id_rubrica_contatto, tipo_rubrica_contatto, valore_rubrica_contatto, valore_riferimento, ext_id, everbridge_identifier, id_invio, channel, vendor) ' . $plain . ' ON CONFLICT (id_rubrica_contatto,tipo_rubrica_contatto,valore_rubrica_contatto,channel,id_invio) DO NOTHING '
+            )->execute();
+
+            if(isset(Yii::$app->params['mas_version']) && Yii::$app->params['mas_version'] == 2) {
+                \common\utils\MasV2Dispatcher::addRecipients($search, $invio);
+            }
+
+            $trans->commit();
+
+        } catch(\Exception $e) {
+
+            $trans->rollBack();
+            throw $e;
+        }
+
 
         return [
             'message'=>'ok'
@@ -1373,9 +1458,26 @@ class MasController extends Controller
 
         $plain = $search->createCommand()->getRawSql();
 
-        Yii::$app->db->createCommand(
-            'INSERT INTO con_mas_invio_contact(id_rubrica_contatto, tipo_rubrica_contatto, valore_rubrica_contatto, valore_riferimento, ext_id, everbridge_identifier, id_invio, channel, vendor) ' . $plain . ' ON CONFLICT (id_rubrica_contatto,tipo_rubrica_contatto,valore_rubrica_contatto,id_invio) DO NOTHING '
-        )->execute();
+        $trans = Yii::$app->db->beginTransaction();
+
+        try {
+
+            Yii::$app->db->createCommand(
+                'INSERT INTO con_mas_invio_contact(id_rubrica_contatto, tipo_rubrica_contatto, valore_rubrica_contatto, valore_riferimento, ext_id, everbridge_identifier, id_invio, channel, vendor) ' . $plain . ' ON CONFLICT (id_rubrica_contatto,tipo_rubrica_contatto,valore_rubrica_contatto,channel,id_invio) DO NOTHING '
+            )->execute();
+
+            if(isset(Yii::$app->params['mas_version']) && Yii::$app->params['mas_version'] == 2) {
+                \common\utils\MasV2Dispatcher::addRecipients($search, $invio);
+            }
+
+            $trans->commit();
+
+        } catch(\Exception $e) {
+
+            $trans->rollBack();
+            throw $e;
+        }
+
 
         return [
             'message'=>'ok'
@@ -1384,8 +1486,7 @@ class MasController extends Controller
     }
 
     /**
-     * Prepara il dispatching del messaggio
-     * servizio http
+     * Elimina invio
      * @return [type] [description]
      */
     public function actionResetInvio() {
@@ -1419,31 +1520,42 @@ class MasController extends Controller
     }
 
     /**
-     * Invia al modulo MAS
+     * Prepara il dispatching del messaggio e dì al mas di inviarlo
      * servizio http
      * @return [type] [description]
      */
     public function actionSendToMas() {
         Yii::$app->response->format = Response::FORMAT_JSON;
         try{
+            
             $invio = MasInvio::findOne(Yii::$app->request->post('id_invio'));
 
-            $contatti = ConMasInvioContact::find()
-            ->select([
-            'id','id_rubrica_contatto','tipo_rubrica_contatto','valore_rubrica_contatto','ext_id','everbridge_identifier','channel','vendor','valore_riferimento'
-            ])
-            ->addSelect(new Expression(intval($invio->id).' as id_invio'))
-            ->addSelect(new Expression('0 as status'))
-            ->addSelect(new Expression(time().' as created_at'))
-            ->addSelect(new Expression(time().' as updated_at'))
-            ->where(['id_invio'=>$invio->id]);
+            if(isset(Yii::$app->params['mas_version']) && Yii::$app->params['mas_version'] == 2) {
+            
+                \common\utils\MasV2Dispatcher::sendMessage($invio);
+            
+            } else {
+
+                $contatti = ConMasInvioContact::find()
+                ->select([
+                'id','id_rubrica_contatto','tipo_rubrica_contatto','valore_rubrica_contatto','ext_id','everbridge_identifier','channel','vendor','valore_riferimento'
+                ])
+                ->addSelect(new Expression(intval($invio->id).' as id_invio'))
+                ->addSelect(new Expression('0 as status'))
+                ->addSelect(new Expression(time().' as created_at'))
+                ->addSelect(new Expression(time().' as updated_at'))
+                ->where(['id_invio'=>$invio->id]);
 
 
-            $q_s = $contatti->createCommand()->getRawSql();
-            $all_contacts = $contatti->asArray()->all();
+                //$q_s = $contatti->createCommand()->getRawSql();
+                $all_contacts = $contatti->asArray()->all();
 
-            $dispatch = new \common\utils\MasDispatcher( $all_contacts, $invio );
-            $res = $dispatch->initialize();
+                $dispatch = new \common\utils\MasDispatcher( $all_contacts, $invio );
+                $res = $dispatch->initialize();
+
+            }
+
+
         } catch(\Exception $e) {
             return ['error'=>$e->getMessage()];
         }
@@ -1497,6 +1609,12 @@ class MasController extends Controller
             $invio->data_invio = date("Y-m-d H:m:s", time());
 
             if(!$invio->save()) throw new \Exception("Dati invio non validi");
+
+            if(isset(Yii::$app->params['mas_version']) && Yii::$app->params['mas_version'] == 2) {
+                $id_message_mas = \common\utils\MasV2Dispatcher::createMessage($message, $invio);
+                $invio->mas_ref_id = (string) $id_message_mas;
+                if(!$invio->save()) throw new \Exception("Errore creazione messaggio", 1);
+            }
 
             return ['message'=>'ok', 'id_invio'=>$invio->id, "redirect_url" => Url::to(['mas/view-invio', 'id_invio' => $invio->id])];
 

@@ -36,7 +36,7 @@ class VolontariController extends Controller
             'access' => [
                 'class' => \yii\filters\AccessControl::className(),
                 'denyCallback' => function ($rule, $action) {
-                    if(Yii::$app->user){
+                    if (Yii::$app->user) {
                         Yii::$app->user->logout();
                     }
                     return $this->redirect(Yii::$app->urlManager->createUrl('site/login'));
@@ -66,7 +66,7 @@ class VolontariController extends Controller
                         'allow' => true,
                         'actions' => ['populate-org-sedi'],
                         'permissions' => ['@']
-                    ],                    
+                    ],
                 ]
             ],
         ];
@@ -80,6 +80,11 @@ class VolontariController extends Controller
     {
         $searchModel = new VolVolontarioSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        // Filter for comunale
+        if (Yii::$app->FilteredActions->type == 'comunale') {
+            $dataProvider->query->andWhere(['operativo' => true]);
+        }
 
         return $this->render('index', [
             'searchModel' => $searchModel,
@@ -108,49 +113,45 @@ class VolontariController extends Controller
     public function actionCreate()
     {
         $model = new VolVolontario();
-        
-        if(Yii::$app->request->method == 'POST') {
 
+        if (Yii::$app->request->method == 'POST') {
             $conn = Yii::$app->db;
             $db = $conn->beginTransaction();
 
-            try{
-
-                $exist = UtlAnagrafica::find()->where(['codfiscale'=>Yii::$app->request->post('UtlAnagrafica')['codfiscale']])->one();
-                if($exist) {
+            try {
+                $exist = UtlAnagrafica::find()->where(['codfiscale' => Yii::$app->request->post('UtlAnagrafica')['codfiscale']])->one();
+                if ($exist) {
                     $anagrafica = $exist;
                 } else {
                     $anagrafica = new UtlAnagrafica();
                     $anagrafica->load(Yii::$app->request->post());
 
-                    if(!$anagrafica->validate()) throw new \Exception(json_encode($anagrafica->getErrors()), 1);
+                    if (!$anagrafica->validate()) {
+                        throw new \Exception(json_encode($anagrafica->getErrors()), 1);
+                    }
 
-                    if($anagrafica->save()) throw new \Exception("Errore salvataggio", 1);
+                    if (!$anagrafica->save()) {
+                        throw new \Exception("Errore salvataggio", 1);
+                    }
                 }
-                
-                
+
+
                 $model->load(Yii::$app->request->post());
                 $model->id_anagrafica = $anagrafica->id;
-                if(!$model->validate()) {
+                if (!$model->validate()) {
                     throw new \Exception(json_encode($model->getErrors()), 1);
                 }
-            
-                if($model->save()) {
+
+                if ($model->save()) {
                     $model->link('anagrafica', $anagrafica);
 
                     $db->commit();
                     return $this->redirect(['view', 'id' => $model->id]);
                 }
-                
-
-            } catch(\Exception $e){
-
+            } catch (\Exception $e) {
                 $db->rollBack();
-                Yii::$app->session->setFlash('error',$e->getMessage());
-
+                Yii::$app->session->setFlash('error', $e->getMessage());
             }
-            
-
         }
 
         return $this->render('create', [
@@ -222,7 +223,7 @@ class VolontariController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         $sedi = VolSede::find()->andWhere(['id_organizzazione' => $id])->all();
-        $data = [['id'=>'','text'=>'']];
+        $data = [['id' => '', 'text' => '']];
         foreach ($sedi as $sede) {
             $data[] = ['id' => $sede->id, 'text' => $sede->indirizzo . " - " . $sede->tipo];
         }

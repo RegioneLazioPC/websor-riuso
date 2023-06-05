@@ -30,7 +30,7 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="utl-evento-index">
 
         <?php 
-
+        
         echo $this->render('_search_partial_report', [
             'filter_model' => $filter_model,
             'year' => true,
@@ -42,13 +42,15 @@ $this->params['breadcrumbs'][] = $this->title;
         usort( $elicotteri, function($a, $b){
             return (str_replace(" ", "", $a) > str_replace(" ", "", $b) ) ? 1 : -1;
         });
-        foreach ($elicotteri as $key => $value) {
+        
+        foreach ($elicotteri as $value) {
             $eli_cols[] = [
-                'attribute' => 'device_'.$key,
-                'label' => $value,
+                'attribute' => 'device_'.$value['device_id'],
+                'label' => $value['device_name'],
+                'format' => 'raw',
                 'contentOptions' => ['style'=>'width: 120px;'],
-                'value' => function($model) use ($key) {
-                    return (isset($model['device_'.$key])) ? $model['device_'.$key] : "";
+                'value' => function($model) use ($value) {
+                    return (isset($model['device_'.$value['device_id']])) ? $model['device_'.$value['device_id']] : "";
                 }
             ];
         }
@@ -79,8 +81,40 @@ $this->params['breadcrumbs'][] = $this->title;
                     return (!empty($model['children'])) ? GridView::ROW_COLLAPSED : '';
                 },
                 'detail'=>function ($model, $key, $index, $column) use ($child_cols) {
+
+                    //var_dump($model['children']); exit;
+                    $child_rows = [];
+
+
+                    foreach ($model['children'] as $child) {
+
+                        if(!isset($child_rows[
+                            $child['giorno'] . '_' . $child['mese'] . '_' . $child['anno']
+                        ])) $child_rows[
+                            $child['giorno'] . '_' . $child['mese'] . '_' . $child['anno']
+                        ] = [
+                            'giorno' => $child['giorno'],
+                            'mese' => $child['mese'],
+                            'anno' => $child['anno']
+                        ];
+
+
+                        foreach ($child as $key => $value) {
+                            if(!in_array($key, ['anno','mese','giorno'])){
+                                $child_rows[
+                                    $child['giorno'] . '_' . $child['mese'] . '_' . $child['anno']
+                                ][$key] = $value;
+                            }
+                        }
+
+                    }
+
+
+
+
+
                     $childDataProvider = new ArrayDataProvider([
-                        'allModels' => $model['children'],
+                        'allModels' => array_values($child_rows),//$model['children'],
                         'pagination' => false            
                     ]);
                     
@@ -108,7 +142,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                 $sheet->setTitle("Export voli");
                             },
                             'exportConfig' => [
-                                    ExportMenu::FORMAT_TEXT => true,
+                                    ExportMenu::FORMAT_TEXT => false,
                                     ExportMenu::FORMAT_HTML => false
                                 ]                
                             ]),
@@ -136,6 +170,11 @@ $this->params['breadcrumbs'][] = $this->title;
         ];
 
         $cols = array_merge($cols, $eli_cols);
+
+        echo $this->render('_export_pdf', [
+            'cols' => $cols
+        ]);
+
 
         ?>
         <h4 style="margin-bottom: 18px;">Dati provenienti da ARKA</h4>
@@ -165,7 +204,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'exportConfig' => [
                     ExportMenu::FORMAT_TEXT => false,
                     ExportMenu::FORMAT_HTML => false
-                ]                
+                ]
             ]),
             'footer'=>true,
         ],

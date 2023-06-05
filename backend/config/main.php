@@ -11,7 +11,7 @@ return [
     'name' => '#Web<b>SOR</b>',
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'backend\controllers',
-    'bootstrap' => ['log','ProtectAdmin'],
+    'bootstrap' => ['log', 'ProtectAdmin', 'FilteredActions'],
     'modules' => [
         'gridview' =>  [
             'class' => '\kartik\grid\Module',
@@ -24,21 +24,23 @@ return [
         'request' => [
             'csrfParam' => '_csrf-backend',
         ],
-        
-        'ProtectAdmin'=>[
-            'class'=>'common\components\ProtectAdmin'
-         ],
+        'FilteredActions' => [
+            'class' => 'common\components\FilteredActions'
+        ],
+        'ProtectAdmin' => [
+            'class' => 'common\components\ProtectAdmin'
+        ],
         'user' => [
             'identityClass' => 'common\models\User',
             'enableAutoLogin' => false,
-            'on '.\yii\web\User::EVENT_BEFORE_LOGOUT => ['backend\models\UserEvents', 'handleBeforeLogout'],
+            'on ' . \yii\web\User::EVENT_BEFORE_LOGOUT => ['backend\models\UserEvents', 'handleBeforeLogout'],
             'authTimeout' => 3600,
             'on afterLogin' => ['backend\events\AfterLoginEvent', 'handleNewUser'],
         ],
         'session' => [
             'name' => 'advanced-backend',
             'class' => 'yii\web\DbSession',
-            'timeout' => 60*60,
+            'timeout' => 60 * 60,
             //'timeout' => 20,
             'writeCallback' => function ($session) {
                 return [
@@ -48,19 +50,24 @@ return [
             },
         ],
         'log' => [
-            'traceLevel' => 3,//YII_DEBUG ? 3 : 0,
+            'traceLevel' => 3, //YII_DEBUG ? 3 : 0,
             'targets' => [
                 [
                     'class' => 'yii\log\FileTarget',
-                    'levels' => ['error','warning'],
-                    'logFile' => '@backend/runtime/logs/websor/'.date('Y_m_d').'.log'                    
+                    'levels' => ['error', 'warning'],
+                    'logFile' => '@backend/runtime/logs/websor/' . date('Y_m_d') . '.log'
                 ],
                 [
                     'class' => 'yii\log\FileTarget',
                     'levels' => ['info'],
-                    //'logFile' => '@backend/runtime/logs/info.log',
-                    'logFile' => '@backend/runtime/logs/memory/'.date('Y_m_d').'.log',   
+                    'logFile' => '@backend/runtime/logs/memory/' . date('Y_m_d') . '.log',
                     'categories' => ['memory'],
+                ],
+                [
+                    'class' => 'yii\log\FileTarget',
+                    'levels' => ['error', 'warning', 'info'],
+                    'logFile' => '@backend/runtime/logs/push_attivazione/' . date('Y_m_d') . '.log',
+                    'categories' => ['push_attivazione'],
                 ],
             ],
         ],

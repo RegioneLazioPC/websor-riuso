@@ -25,7 +25,7 @@ class UtlIngaggioSearch extends UtlIngaggio
             'sede.indirizzo',
             'evento.tipologia.tipologia', 'evento.sottotipologia.tipologia', 'evento.comune.comune', 'evento.comune.provincia.sigla',
             'organizzazione.ref_id', 'sede.tipo', 'sede.locComune.provincia.sigla',
-            'indirizzo_luogo'
+            'indirizzo_luogo','feedbackRl.created_at'
         ]);
     }
 
@@ -44,7 +44,7 @@ class UtlIngaggioSearch extends UtlIngaggio
                'aggregatore', 'anno', 'mese', 'tipologia_evento' ], 'string'],
             [['evento.comune.provincia.sigla', 'evento.comune.comune',
             'note', 'updated_at', 'closed_at','data_dal', 'data_al'], 'safe'],
-            [['created_at'], 'date'],
+            [['created_at','feedbackRl.created_at'], 'date'],
         ];
     }
 
@@ -62,7 +62,7 @@ class UtlIngaggioSearch extends UtlIngaggio
      *
      * @return ActiveDataProvider
      */
-    public function search($params)
+    public function search($params, $to_check = false)
     {
         
         $query = UtlIngaggio::find()->joinWith(
@@ -71,12 +71,13 @@ class UtlIngaggioSearch extends UtlIngaggio
                 'evento.tipologia as tipologia', 'evento.sottotipologia as sottotipologia', 
                 'automezzo.tipo', 'automezzo.tipo.aggregatoriUnique as aggregatore_automezzo',
                 'attrezzatura.tipo', 'attrezzatura.tipo.aggregatoriUnique as aggregatore_attrezzatura',
-                'evento.comune', 'evento.comune.provincia'
+                'evento.comune', 'evento.comune.provincia','feedbackRl'
             ]
         );
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
+            'sort'=> ['defaultOrder' => ['created_at' => SORT_DESC]],
         ]);
 
         $this->load($params);
@@ -342,9 +343,11 @@ class UtlIngaggioSearch extends UtlIngaggio
 
         
 
-        $query->andFilterWhere(['ilike', 'note', $this->note]);
+        $query->andFilterWhere(['ilike', 'utl_ingaggio.note', $this->note]);
 
-
+        if($to_check) {
+            $query->andWhere(['rl_feedback_to_check'=>1]);
+        }
 
         return $dataProvider;
     }
@@ -442,7 +445,7 @@ class UtlIngaggioSearch extends UtlIngaggio
         }
 
 
-        $query->andFilterWhere(['ilike', 'note', $this->note]);
+        $query->andFilterWhere(['ilike', 'utl_ingaggio.note', $this->note]);
 
         return $dataProvider;
     }

@@ -85,10 +85,10 @@ angular.module('ingaggi', ['uiGmapgoogle-maps', 'region.helpers', 'mapAngular','
 
     
     $scope.autocompleteOptions = {
-        bounds: new google.maps.LatLngBounds(new google.maps.LatLng(41.177572,11.323039), new google.maps.LatLng(42.950794,13.401760)),
-        strictBounds: true,
-        types: ['address'],
-        componentRestrictions: {country: 'it'}
+        //bounds: new google.maps.LatLngBounds(new google.maps.LatLng(41.177572,11.323039), new google.maps.LatLng(42.950794,13.401760)),
+        //strictBounds: true,
+        //types: ['address'],
+        //componentRestrictions: {country: 'it'}
     }
     
     $scope.initialized = false;
@@ -114,6 +114,7 @@ angular.module('ingaggi', ['uiGmapgoogle-maps', 'region.helpers', 'mapAngular','
     $scope.meta_keys = [];
     
     $scope.inizializza = function(lat, lng, meta_keys) {
+        
         selfScope.lat = lat;
         selfScope.lon = lng;
         selfScope.base_lat = lat;
@@ -201,10 +202,17 @@ angular.module('ingaggi', ['uiGmapgoogle-maps', 'region.helpers', 'mapAngular','
         return disabled;
     }
 
+    $scope.setSpecializzazioni = function(list) {
+        var sp = []
+        list.map(el => {
+            sp.push(el.toString())
+        })
+        return sp
+    }
+
 
     $scope.submitForm = function() {       
         if(!$scope.initialized) $scope.initialized = true;
-
         
         // inserisco lat e lon se indirizzo selezionato
         if($scope.place && $scope.place.geometry && $scope.place.geometry.location){
@@ -214,6 +222,7 @@ angular.module('ingaggi', ['uiGmapgoogle-maps', 'region.helpers', 'mapAngular','
             selfScope.lat = selfScope.base_lat;
             selfScope.lon = selfScope.base_lon;
         }
+        
         selfScope.page = 1;
         search();
     }
@@ -298,9 +307,6 @@ angular.module('ingaggi', ['uiGmapgoogle-maps', 'region.helpers', 'mapAngular','
                 if(pages.indexOf(n) == -1) pages.push(n);}
         }
 
-        console.log(pages);
-
-        
         $scope.show_pages = pages;
     }
 
@@ -321,7 +327,6 @@ angular.module('ingaggi', ['uiGmapgoogle-maps', 'region.helpers', 'mapAngular','
             $scope.engaging_ids.push(obj.riferimento);
             SearchService.engage(obj, event)
             .then(function(res){
-                console.log(res)
                 if(!res.data.error) {
                     window.reload_ingaggi();
                     search();
@@ -362,8 +367,8 @@ angular.module('ingaggi', ['uiGmapgoogle-maps', 'region.helpers', 'mapAngular','
 
     $scope.getContacts = function( string ) {
         try {
-            console.log(string)
-            console.log(string.split(", "));
+            //console.log(string)
+            //console.log(string.split(", "));
             return string.split(", ");
         }catch(e) {
             return ""
@@ -374,8 +379,9 @@ angular.module('ingaggi', ['uiGmapgoogle-maps', 'region.helpers', 'mapAngular','
 
         
         try{
-            var label = contact.note && contact.note != '' ? contact.note + ": " : ""
+            var label = '';
             label += contact.contatto.contatto;
+            label += contact.note && contact.note != '' ? " (" + contact.note + ")" : ""
             return label
         } catch(e) {
             console.error(e);

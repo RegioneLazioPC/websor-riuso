@@ -12,6 +12,9 @@ class m180419_165727_add_engaged_column extends Migration
      */
     public function safeUp()
     {
+        
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS routing.view_ingaggio_organizzazioni")
+            ->execute();
         $this->addColumn('utl_attrezzatura', 'engaged', $this->boolean()->defaultValue(false));
         $this->addColumn('utl_automezzo', 'engaged', $this->boolean()->defaultValue(false));
     }
@@ -21,6 +24,8 @@ class m180419_165727_add_engaged_column extends Migration
      */
     public function safeDown()
     {
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS routing.view_ingaggio_organizzazioni")
+            ->execute();
         $this->dropColumn('utl_attrezzatura', 'engaged');
         $this->dropColumn('utl_automezzo', 'engaged');
     }

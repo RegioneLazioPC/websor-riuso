@@ -13,7 +13,7 @@ use common\models\UtlEvento;
 use common\models\utility\UtlContatto;
 use common\models\organizzazione\ConOrganizzazioneContatto;
 use nanson\postgis\behaviors\GeometryBehavior;
-
+use common\models\cap\ViewCapVehicles;
 
 class UtlIngaggioSearchForm extends \yii\db\ActiveRecord
 {
@@ -69,6 +69,10 @@ class UtlIngaggioSearchForm extends \yii\db\ActiveRecord
     public $dist_km;
     public $sort;
     public $sort_order;
+
+    public $capacita;
+    //public $lat;
+    //public $lon;
     public $distance;
     public $id_utl_automezzo_tipo;
     public $id_utl_attrezzatura_tipo;
@@ -80,7 +84,7 @@ class UtlIngaggioSearchForm extends \yii\db\ActiveRecord
     {
         return [
             [['id_utl_automezzo_tipo','id_utl_attrezzatura_tipo','id_provincia','id_comune','distance','id_evento', 'lat', 'lon','specializzazione', 'sort','sort_order'], 'default', 'value' => null],
-            [['id_utl_automezzo_tipo','id_utl_attrezzatura_tipo','id_provincia','id_comune','distance', 'id_evento','specializzazione','num_comunale'], 'integer']
+            [['id_utl_automezzo_tipo','id_utl_attrezzatura_tipo','id_provincia','id_comune','distance', 'id_evento','specializzazione','num_comunale', 'capacita'], 'integer']
         ];
     }
 
@@ -133,6 +137,11 @@ class UtlIngaggioSearchForm extends \yii\db\ActiveRecord
     public function getContatti() {
         return $this->hasMany( UtlContatto::className(), ['id' => 'id_contatto'])
         ->via('contattiAttivazioni');
+    }
+
+    public function getMezzoAttivatoDaAltraSala() {
+        return $this->hasOne( ViewCapVehicles::className(), ['targa' => 'ref_identifier'])
+        ->andOnCondition( 'view_cap_vehicles.data_chiusura = \'\' AND view_cap_vehicles.data_deviazione = \'\' ');
     }
     
 }

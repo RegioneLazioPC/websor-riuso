@@ -7,6 +7,8 @@ use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 use backend\events\EditedUtlEventoEvent;
 
+use common\models\UtlTipologia;
+
 /**
  * This is the model class for table "richiesta_elicottero".
  *
@@ -45,6 +47,12 @@ class RichiestaElicottero extends \yii\db\ActiveRecord
     public $date;
     public $hour;
     public $minutes;
+    public $date_arrivo_stimato;
+    public $hour_arrivo_stimato;
+    public $minutes_arrivo_stimato;
+    public $date_atterraggio;
+    public $hour_atterraggio;
+    public $minutes_atterraggio;
 
     /**
      * @inheritdoc
@@ -85,14 +93,24 @@ class RichiestaElicottero extends \yii\db\ActiveRecord
             [['tipo_intervento', 'elettrodotto', 'oreografia', 'vento', 'ostacoli', 'note'], 'string'],
             [['area_bruciata', 'area_rischio'], 'number'],
             [['squadre'], 'boolean'],
+            [[
+                'deviato',
+                'dos',
+                'squadre_volontariato',
+                'squadre_vvf',
+                'id_tipo_evento'
+            ], 'integer'],
             //[['created_at'], 'required'],
             [['created_at', 'updated_at', 'codice_elicottero', 'motivo_rifiuto', 'dataora_decollo'], 'safe'],
+            [['dataora_arrivo_stimato', 'dataora_atterraggio'], 'date', 'format'=>'php:Y-m-d H:i'],
             ['engaged', 'boolean'],
             [['cfs', 'sigla_radio_dos'], 'string', 'max' => 255],
             [['id_elicottero', 'id_comune'], 'integer'],
             [['localita', 'missione'], 'string'],
             [['hour'], 'number', 'min'=>0, 'max'=>24],
-            [['minutes'], 'number', 'min'=>0, 'max'=>59]
+            [['minutes'], 'number', 'min'=>0, 'max'=>59],
+            [['n_lanci'], 'integer'],
+
         ];
     }
 
@@ -106,6 +124,10 @@ class RichiestaElicottero extends \yii\db\ActiveRecord
             'idevento' => 'Idevento',
             'idingaggio' => 'Idingaggio',
             'idoperatore' => 'Idoperatore',
+            'dataora_arrivo_stimato' => 'Arrivo stimato',
+            'dataora_atterraggio' => 'Atterraggio',
+            'deleted' => 'Annullata',
+            'n_lanci' => 'Numero lanci',
             'tipo_intervento' => 'Tipo Intervento',
             'priorita_intervento' => 'Priorita Intervento',
             'tipo_vegetazione' => 'Tipo Vegetazione',
@@ -165,7 +187,10 @@ class RichiestaElicottero extends \yii\db\ActiveRecord
             'missione',
             'dataora_decollo',
             'hour',
-            'minutes'
+            'minutes',
+            'dataora_arrivo_stimato',
+            'dataora_atterraggio',
+            'n_lanci',
         ];
         $scenarios[self::SCENARIO_PARTIAL_UPDATE] = [
             'idevento',
@@ -195,10 +220,18 @@ class RichiestaElicottero extends \yii\db\ActiveRecord
             'missione',
             'dataora_decollo',
             'hour',
-            'minutes'
+            'minutes',
+            'dataora_arrivo_stimato',
+            'dataora_atterraggio',
+            'n_lanci',
         ]; 
         $scenarios[self::SCENARIO_SEND_COAU] = [
-            'id_anagrafica_funzionario'
+            'id_anagrafica_funzionario',
+            'deviato',
+            'dos',
+            'squadre_volontariato',
+            'squadre_vvf',
+            'id_tipo_evento'
         ];
         return $scenarios;
     }
@@ -225,6 +258,14 @@ class RichiestaElicottero extends \yii\db\ActiveRecord
     public function getEvento()
     {
         return $this->hasOne(UtlEvento::className(), ['id' => 'idevento']);
+    }
+
+    /**
+     * @return [type] [description]
+     */
+    public function getTipoEvento() 
+    {
+        return $this->hasOne(UtlTipologia::className(), ['id' => 'id_tipo_evento']);
     }
 
     /**

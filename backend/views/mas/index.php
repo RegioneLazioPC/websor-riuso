@@ -20,43 +20,6 @@ $cols = [
                 'width' => '80px',
             ],
             [
-                'label' => 'Titolo',
-                'attribute' => 'title'
-            ],
-            [
-                'label' => 'Creato da',
-                'attribute' => 'id_user',
-                'value' => function($model){
-                    return @$model->user->username;
-                }
-            ],
-            [
-                'label' => 'File',
-                'attribute' =>'id_media',
-                'width'=>'250px',
-                'format' => 'raw',
-                'value' => function($model) {
-                    if(!empty($model->file)) {
-                        $str = '';
-                        foreach ($model->file as $media) {
-                            $str .= "<p>" . Html::a('Vedi allegato', ['media/view-media', 'id' => $media->id], ['class' => 'btn btn-primary btn-xs', 'style'=>'margin-left: 10px; color: #fff', 'target'=>'_blank', 'data-pjax'=>0]) . Html::encode($media->nome) . 
-                                 
-                            "</p>";
-                        }
-                        return $str;
-                    } else {
-                        return " - ";
-                    }
-                }
-            ],
-            'note',
-            [
-                'label' => 'Note',
-                'attribute' => 'note',
-                'contentOptions' => ['style'=>'width: 200px;'],
-                'width' => '200px',
-            ],
-            [
                 'label' => 'Data creazione',
                 'attribute' => 'created_at',
                 'filterType' => GridView::FILTER_DATE,
@@ -69,6 +32,56 @@ $cols = [
                     ]
                 ],
                 'format' => 'datetime'
+            ],
+            [
+                'label' => 'Creato da',
+                'attribute' => 'id_user',
+                'value' => function($model){
+                    return @$model->user->username;
+                }
+            ],
+            [
+                'label' => 'Titolo',
+                'contentOptions' => ['style'=>'width: 400px; white-space: normal; word-wrap: break-word;'],
+                'attribute' => 'title'
+            ],
+            [
+                'label' => 'File',
+                'attribute' =>'id_media',
+                'contentOptions' => ['style'=>'max-width: 250px; white-space: normal; word-wrap: break-word;'],
+                'format' => 'raw',
+                'value' => function($model) {
+                    if(!empty($model->file)) {
+                        $str = '';
+                        foreach ($model->file as $media) {
+                            $str .= "<p>" . Html::a('Vedi allegato', ['media/view-media', 'id' => $media->id], ['class' => 'btn btn-primary btn-xs', 'style'=>'margin-left: 10px; color: #fff', 'target'=>'_blank', 'data-pjax'=>0]) . Html::encode($media->nome) . 
+                                 
+                            "</p>";
+                        }
+                        return $str;
+                    } else {
+                        return " - ";
+                    }/*
+                    return (!empty($model->id_media)) ? Html::a('Vedi allegato', 
+                        ['media/view-media', 'id' => $model->id_media], 
+                        ['class' => 'btn btn-primary btn-xs', 'target'=>'_blank', 'data-pjax'=>0, 'style'=>'color: #fff']
+                    ) : '';*/
+                }
+            ],/*
+            [
+                'label' => 'Allerta',
+                'attribute' => 'id_allerta',
+                'value' => function($data){
+                    return (!empty($data->id_allerta)) ? Yii::$app->formatter->asDate($data->allerta->data_allerta) : "";
+                }
+            ],*/
+            //'note',
+            [
+                'label' => 'Note',
+                'attribute' => 'note',
+                'contentOptions' => ['style'=>'width: 200px;white-space: normal;'],
+                'headerOptions' => ['style'=>'width: 200px;'],
+                'width' => '200px',
             ],
             [
                 'label' => 'Email',

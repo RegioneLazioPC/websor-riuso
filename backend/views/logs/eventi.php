@@ -9,6 +9,7 @@ use common\models\AuditTrailSearch;
 
 use yii\helpers\Html;
 use kartik\export\ExportMenu;
+use common\models\UtlSegnalazione;
 
 $filterModel = new AuditTrailSearch;
 $dataProvider = $filterModel->search( Yii::$app->request->get(), 'common\models\UtlEvento');

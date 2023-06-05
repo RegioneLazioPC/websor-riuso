@@ -21,8 +21,8 @@ class m190102_113338_autocomplete_addresses_table extends Migration
             'civici' => 'json',
             'search_field' => 'tsvector',
             'type' => $this->integer(1),
-            'lat' => $this->double(11,5),
-            'lon' => $this->double(11,5),
+            'lat' => $this->double(11, 5),
+            'lon' => $this->double(11, 5),
         ]);
 
         Yii::$app->db->createCommand("CREATE INDEX search_address_idx ON _autocomplete_addresses USING GIN (search_field);")->execute();
@@ -37,7 +37,7 @@ class m190102_113338_autocomplete_addresses_table extends Migration
      */
     public function safeDown()
     {
-        Yii::$app->db->createCommand("DROP INDEX search_address_idx ON _autocomplete_addresses;")->execute();
+        Yii::$app->db->createCommand("DROP INDEX search_address_idx;")->execute();
         $this->dropTable('_autocomplete_addresses');
     }
 

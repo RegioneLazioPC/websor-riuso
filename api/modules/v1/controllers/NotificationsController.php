@@ -21,7 +21,7 @@ class NotificationsController extends ActiveController
     {
         $behaviors = parent::behaviors();
         $behaviors['authenticator'] = [
-            'class' => JwtHttpBearerAuth::class,
+            'class' => \api\utils\Authenticator::class,
             'except' => ['options']
         ];
 

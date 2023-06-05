@@ -12,6 +12,7 @@ use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
 use common\models\UtlAnagrafica;
+
 /**
  * OperatorePcController implements the CRUD actions for UtlOperatorePc model.
  */
@@ -27,14 +28,15 @@ class OperatorepcController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'lockUnlock' => ['POST']
                 ],
             ],
             'access' => [
                 'class' => \yii\filters\AccessControl::className(),
                 'denyCallback' => function ($rule, $action) {
-                    if(Yii::$app->user){
+                    if (Yii::$app->user) {
                         Yii::error("Tentativo di accesso non autorizzato aggregatori user: ".Yii::$app->user->getId());
-                        Yii::$app->user->logout();                        
+                        Yii::$app->user->logout();
                     }
                     return $this->redirect(Yii::$app->urlManager->createUrl('site/login'));
                 },
@@ -56,11 +58,11 @@ class OperatorepcController extends Controller
                     ],
                     [
                         'allow' => true,
-                        'actions' => ['delete'],
+                        'actions' => ['delete', 'lock-unlock'],
                         'permissions' => ['deleteOperatore']
                     ],
-                ]        
-            ]    
+                ]
+            ]
         ];
     }
 
@@ -77,6 +79,25 @@ class OperatorepcController extends Controller
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
         ]);
+    }
+
+    /**
+     * Unlock operator
+     * @param integer $id
+     * @return mixed
+     */
+    public function actionLockUnlock($id)
+    {
+        $model = $this->findModel($id);
+        
+        if (!empty($model->user)) {
+            $u = $model->user;
+            $u->status = ($u->status == \common\models\User::STATUS_DELETED) ? \common\models\User::STATUS_ACTIVE : \common\models\User::STATUS_DELETED;
+            $u->save(false);
+        }
+
+
+        return $this->redirect(['index']);
     }
 
     /**
@@ -105,21 +126,19 @@ class OperatorepcController extends Controller
 
         
         if ($anagrafica->load(Yii::$app->request->post()) && $model->load(Yii::$app->request->post())) {
-
             $connection = Yii::$app->db;
             $transaction = $connection->beginTransaction();
 
             try {
-
                 $anagrafica = $anagrafica->createOrUpdate();
                 // Create utente
-                if($anagrafica->getErrors()){
+                if ($anagrafica->getErrors()) {
                     throw new Exception('Errore salvataggio utente. Controllare i dati', 500);
                 }
 
                 $model->id_anagrafica = $anagrafica->id;
                 // Create utente
-                if(!$model->save()){
+                if (!$model->save()) {
                     throw new Exception('Errore salvataggio utente. Controllare i dati', 500);
                 }
                 
@@ -130,18 +149,20 @@ class OperatorepcController extends Controller
                 $user->setPassword($model->password/*$model->matricola.substr($model->cognome, 0, 3)*/);
                 
                 $user->generateAuthKey();
-                if(!$user->validate()) :
+                if (!$user->validate()) :
                     throw new Exception('Dati utente non validi, probabilmente lo username o la mail già sono nel sistema', 422);
                 endif;
                 
-                if(!$user->save()) {
+                if (!$user->save()) {
                     throw new Exception('Errore salvataggio utente. Controllare i dati', 500);
                 }
                 
                 // Add Permission
                 $auth = Yii::$app->authManager;
                 $authorRole = $auth->getRole($model->ruolo);
-                if(!$authorRole) throw new Exception('Ruolo non valido', 500);
+                if (!$authorRole) {
+                    throw new Exception('Ruolo non valido', 500);
+                }
                 $auth->assign($authorRole, $user->getId());
 
                 // Save iduser in operatore
@@ -184,24 +205,34 @@ class OperatorepcController extends Controller
         $old_role = $model->ruolo;
 
         // Mostra il form nel caso non ci siano dati da aggiornare
-        if (!Yii::$app->request->post()) return $this->render('update', ['model' => $model]);
+        if (!Yii::$app->request->post()) {
+            return $this->render('update', ['model' => $model]);
+        }
 
         $connection = Yii::$app->db;
         $transaction = $connection->beginTransaction();
 
         try {
-            if (!$anagrafica->load(Yii::$app->request->post())) throw new Exception('Si è verificato un problema sui dati anagrafici',101);
-            if (!$anagrafica->save()) throw new Exception('Si è verificato un problema sul salvataggio dati anagrafici',101);
+            if (!$anagrafica->load(Yii::$app->request->post())) {
+                throw new Exception('Si è verificato un problema sui dati anagrafici', 101);
+            }
+            if (!$anagrafica->save()) {
+                throw new Exception('Si è verificato un problema sul salvataggio dati anagrafici', 101);
+            }
 
-            if (!$model->load(Yii::$app->request->post())) throw new Exception('Si è verificato un problema sui dati',101);
-            if (!$model->save()) throw new Exception('Si è verificato un problema sul salvataggio dei dati',102);
+            if (!$model->load(Yii::$app->request->post())) {
+                throw new Exception('Si è verificato un problema sui dati', 101);
+            }
+            if (!$model->save()) {
+                throw new Exception('Si è verificato un problema sul salvataggio dei dati', 102);
+            }
 
             
-            if($old_role != $model->ruolo) :
+            if ($old_role != $model->ruolo) :
                 // Aggiorna i permessi
                 $auth = Yii::$app->authManager;
 
-                $oldAuthRole = $auth->getRole( $old_role );
+                $oldAuthRole = $auth->getRole($old_role);
                 $auth->revoke($oldAuthRole, $model->iduser);
                 
                 
@@ -211,23 +242,22 @@ class OperatorepcController extends Controller
 
             // Salvo user data
             $mdUser = $model->user;
-            if ($mdUser){
-
-                if($mdUser->email != $anagrafica->email){
+            if ($mdUser) {
+                if ($mdUser->email != $anagrafica->email) {
                     $mdUser->email = $anagrafica->email;
                 }
 
-                if($mdUser->username != $model->username){
+                if ($mdUser->username != $model->username) {
                     $mdUser->username = $model->username;
                 }
 
-                if(!empty($model->password)){
-                  $mdUser->setPassword($model->password);
+                if (!empty($model->password)) {
+                    $mdUser->setPassword($model->password);
                 }
 
-                if(!$mdUser->save()){
-                  Yii::error( $mdUser->getErrors() );
-                  throw new Exception('Errore modifica email user. Controllare i dati', 500);
+                if (!$mdUser->save()) {
+                    Yii::error($mdUser->getErrors());
+                    throw new Exception('Errore modifica email user. Controllare i dati', 500);
                 }
             }
 
@@ -266,20 +296,20 @@ class OperatorepcController extends Controller
      * @param  [type] $id [description]
      * @return [type]     [description]
      */
-    public function actionAddContattoRubrica($id){
+    public function actionAddContattoRubrica($id)
+    {
 
         $base_model = $this->findModel($id);
         
         $contatto = new \common\models\utility\UtlContatto;
         $contatto->load(Yii::$app->request->post());
-        if($contatto->save()):
+        if ($contatto->save()) :
             $base_model->link('contatto', $contatto, ['use_type'=>$contatto->use_type, 'type'=>$contatto->type]);
         endif;
 
         $base_model->syncEverbridge();
 
         return $this->redirect(['view','id'=>$id]);
-
     }
 
     /**
@@ -292,9 +322,11 @@ class OperatorepcController extends Controller
      */
     public function actionDeleteContattoRubrica(
         $id
-    ){
+    ) {
         $c = \common\models\operatore\ConOperatorePcContatto::find()->where(['id'=>$id])->one();
-        if($c) $c->delete();
+        if ($c) {
+            $c->delete();
+        }
 
         $base_model = $this->findModel($c->id_operatore_pc);
         $base_model->syncEverbridge();
@@ -314,16 +346,17 @@ class OperatorepcController extends Controller
      */
     public function actionSetDefault(
         $id
-    ){
+    ) {
         $c = \common\models\operatore\ConOperatorePcContatto::find()->where(['id'=>$id])->one();
-        if(!$c) throw new NotFoundHttpException("Contatto non trovato");
+        if (!$c) {
+            throw new NotFoundHttpException("Contatto non trovato");
+        }
         
         // cancella solo i contatti
         $c->contatto->check_predefinito = ($c->contatto->check_predefinito == 1) ? 0 : 1;
-        if(!$c->contatto->save()) {
-            
-            Yii::error(json_encode( $c->contatto->getErrors() ) );
-            throw new \Exception("Errore impostazione predefinito", 1);            
+        if (!$c->contatto->save()) {
+            Yii::error(json_encode($c->contatto->getErrors()));
+            throw new \Exception("Errore impostazione predefinito", 1);
         }
 
         return $this->redirect(['view', 'id'=>$c->id_operatore_pc]);
@@ -340,20 +373,20 @@ class OperatorepcController extends Controller
      */
     public function actionSetMobile(
         $id
-    ){
+    ) {
         $c = \common\models\operatore\ConOperatorePcContatto::find()->where(['id'=>$id])->one();
-        if(!$c) throw new NotFoundHttpException("Contatto non trovato");
+        if (!$c) {
+            throw new NotFoundHttpException("Contatto non trovato");
+        }
         
         
         $c->contatto->check_mobile = ($c->contatto->check_mobile == 1) ? 0 : 1;
-        if(!$c->contatto->save()) {
-            
-            Yii::error(json_encode( $c->contatto->getErrors() ) );
-            throw new \Exception("Errore impostazione predefinito", 1);            
+        if (!$c->contatto->save()) {
+            Yii::error(json_encode($c->contatto->getErrors()));
+            throw new \Exception("Errore impostazione predefinito", 1);
         }
 
         return $this->redirect(['view', 'id'=>$c->id_operatore_pc]);
-
     }
 
     /**
@@ -367,33 +400,31 @@ class OperatorepcController extends Controller
      */
     public function actionSetUseType(
         $id
-    ){
+    ) {
 
         $c = \common\models\operatore\ConOperatorePcContatto::find()->where(['id'=>$id])->one();
-        if(!$c) throw new NotFoundHttpException("Contatto non trovato");
+        if (!$c) {
+            throw new NotFoundHttpException("Contatto non trovato");
+        }
         
         $new = ($c->use_type == 2) ? 0 : 2;
         
         $c->use_type = $new;
-        if(!$c->save()) {
-            
-            Yii::error(json_encode( $c->getErrors() ) );
-            throw new \Exception("Errore impostazione predefinito", 1);            
+        if (!$c->save()) {
+            Yii::error(json_encode($c->getErrors()));
+            throw new \Exception("Errore impostazione predefinito", 1);
         }
         
         $c->contatto->use_type = $new;
-        if(!$c->contatto->save()) {
-            
-            Yii::error(json_encode( $c->contatto->getErrors() ) );
-            throw new \Exception("Errore impostazione predefinito", 1);            
-
-        } 
+        if (!$c->contatto->save()) {
+            Yii::error(json_encode($c->contatto->getErrors()));
+            throw new \Exception("Errore impostazione predefinito", 1);
+        }
 
         $base_model = $this->findModel($c->id_operatore_pc);
         $base_model->syncEverbridge();
 
         return $this->redirect(['view', 'id'=>$c->id_operatore_pc]);
-
     }
 
 

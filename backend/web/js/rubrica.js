@@ -510,7 +510,7 @@ angular.module('AppRubrica', ['uiGmapgoogle-maps', 'region.helpers','agGrid',
         var formatted_data = res.data.map(function (contact) {
             try {
                 contact.gruppi = (contact.gruppi) ? JSON.parse(contact.gruppi) : [];
-                contact.zone_allerta = contact.zone_allerta.split(",");
+                contact.zone_allerta = contact.zone_allerta ? contact.zone_allerta.split(",") : "";
             } catch(e) {
                 contact.gruppi = [];
             }
@@ -1166,14 +1166,23 @@ angular.module('AppRubrica', ['uiGmapgoogle-maps', 'region.helpers','agGrid',
             // ora in base a zone e gruppi selezionale
             rows.map(function(row) {
                 var ok = false;
-                row.entity.zone_allerta.map(function(z){
-                    if(selfScope.zona_allerta[z] == 1) ok = true;
-                });
+                if(row.entity && row.entity.zone_allerta) {
+                    
+                    if(Array.isArray(row.entity.zone_allerta)) {
+                        row.entity.zone_allerta.map(function(z){
+                            if(selfScope.zona_allerta[z] == 1) ok = true;
+                        });
+                    }
 
-                if( row.entity.zone_allerta.length == 0 || 
-                    !row.entity.zone_allerta ||
-                    (row.entity.zone_allerta.length == 1 && row.entity.zone_allerta[0] == '' )
-                        ) ok = true;
+                    if( row.entity.zone_allerta.length == 0 || 
+                        !row.entity.zone_allerta ||
+                        (row.entity.zone_allerta.length == 1 && row.entity.zone_allerta[0] == '' )
+                            ) ok = true;
+
+                } else {
+                    // non ha zone di allerta, imposto true
+                    ok = true;
+                }
 
                 if(!ok) {
                     row.entity.gruppi.map(function(g){
@@ -2491,7 +2500,7 @@ angular.module('AppRubrica', ['uiGmapgoogle-maps', 'region.helpers','agGrid',
         contacts: [
             {name: 'Contatto', field: 'valore_rubrica_contatto'},
             {name: 'Riferimento', field: 'valore_riferimento', defaultSort: { direction: uiGridConstants.ASC }},
-            {name: 'Tipo riferimento', field: 'contatto', cellFilter: 'tipoRiferimento'},
+            {name: 'Tipo riferimento', field: 'tipologia_riferimento'/*, cellFilter: 'tipoRiferimento'*/},
             {name: 'Canale', field: 'channel'},
             {name: 'Inviato', field: 'inviato'},
         ],
@@ -2549,11 +2558,13 @@ angular.module('AppRubrica', ['uiGmapgoogle-maps', 'region.helpers','agGrid',
     $scope.is_running = false;
     $scope.id_invio = null;
     $scope.log_channel = 'Email';
-    $scope.csrf = null
+    $scope.csrf = null;
+    $scope.version = 1;
 
-    $scope.initController = function(invio, csrf_token) {
+    $scope.initController = function(invio, csrf_token, version) {
         $scope.id_invio = invio;
         $scope.csrf = csrf_token;
+        $scope.version = version;
         // verifica se girano i consumer
         $scope.isActiveMas();
 
@@ -2583,7 +2594,7 @@ angular.module('AppRubrica', ['uiGmapgoogle-maps', 'region.helpers','agGrid',
         }
     }
 
-    $scope.updateData = function ( reload_columns = true ) {
+    $scope.updateData = function ( reset = 0 ) {
         
         $scope.uiGrid.data = [];
         $scope.uiGrid.columnDefs = [];
@@ -2591,9 +2602,12 @@ angular.module('AppRubrica', ['uiGmapgoogle-maps', 'region.helpers','agGrid',
         $scope.uiGridExpandable.data = [];
         $scope.uiGridExpandable.columnDefs = [];
 
-        MonitoraggioService[serviceData()]({id_invio: $scope.id_invio, channel: $scope.log_channel }).then( function(res) {
+        var current_action = $scope.current_action;
+
+        MonitoraggioService[serviceData()]({id_invio: $scope.id_invio, channel: $scope.log_channel, reset: 0 }).then( function(res) {
             //console.log('risultato', res);
             var data = res.data.data;
+            if(current_action != $scope.current_action) return;
 
             
             if( $scope.current_action == 'contacts') {
@@ -2607,20 +2621,38 @@ angular.module('AppRubrica', ['uiGmapgoogle-maps', 'region.helpers','agGrid',
                     var sent_statuses = (data[i].channel == 'Fax' || data[i].channel == 'Pec' || data[i].channel == 'Sms') ? [3] : [2,3];
 
                     var sent = false;
-                    data[i].masSingleSendsWithoutDuplicates.map(function(el) {
-                        if(sent_statuses.indexOf(el.status) != -1) sent = true
-                    })
+                    if($scope.version == 1) {
+                        data[i].masSingleSendsWithoutDuplicates.map(function(el) {
+                            if(sent_statuses.indexOf(el.status) != -1) sent = true
+                        })
+                    } else {
+                        data[i].masV2SingleSends.map(function(el) {
+                            if(sent_statuses.indexOf(el.status) != -1) sent = true
+                        })
+                    }
 
                     data[i].inviato = sent ? "Si" : "No";
                     //console.log(data[i].masSingleSendsWithoutDuplicates)
-                    data[i].subGridOptions = {
-                      columnDefs: [
-                            {name: 'Status', field: 'status', cellFilter: 'replaceStatus'},
-                            {name: 'Invio', field: 'sent_time', cellFilter: 'logDateField'},
-                            {name: 'Feedback', field: 'feedback_time', cellFilter: 'logDateField'},
-                      ],
-                      data: data[i].masSingleSendsWithoutDuplicates
-                    };
+                    if($scope.version == 1) {
+                        data[i].subGridOptions = {
+                          columnDefs: [
+                                {name: 'Status', field: 'status', cellFilter: 'replaceStatus'},
+                                {name: 'Invio', field: 'sent_time', cellFilter: 'logDateField'},
+                                {name: 'Feedback', field: 'feedback_time', cellFilter: 'logDateField'},
+                          ],
+                          data: data[i].masSingleSendsWithoutDuplicates
+                        };
+                    } else {
+                        data[i].subGridOptions = {
+                          columnDefs: [
+                                {name: 'Status', field: 'status_string'},
+                                {name: 'Invio', field: 'sent_date'},
+                                {name: 'Feedback', field: 'received_date'},
+                                {name: 'Rifiuto', field: 'refused_date'},
+                          ],
+                          data: data[i].masV2SingleSends.filter(el => parseInt(el.status) != 0)
+                        };
+                    }
                 }
 
                 $scope.uiGridExpandable.data = data;
@@ -2746,66 +2778,79 @@ angular.module('AppRubrica', ['uiGmapgoogle-maps', 'region.helpers','agGrid',
      */
     $scope.resend = function() {
         if($scope.calling) return;
-        $scope.calling = true;
-        
-        MonitoraggioService.resend({
-            action: 'all',
-            '_csrf-backend': $scope.csrf,
-            id_invio: $scope.id_invio 
-        }).then(function(res) {
-            $scope.updateData(false);
-            $scope.calling = false;
-        }).catch(function(err){
-            console.log(err);
-            $scope.calling = false;
-        })
+
+        if(confirm("Sicuro di voler effettuare questa azione?")) {
+            $scope.calling = true;
+            
+            MonitoraggioService.resend({
+                action: 'all',
+                '_csrf-backend': $scope.csrf,
+                id_invio: $scope.id_invio 
+            }).then(function(res) {
+                $scope.updateData(false);
+                $scope.calling = false;
+            }).catch(function(err){
+                console.log(err);
+                $scope.calling = false;
+            })
+        }
     }
     $scope.resendNotSent = function() {
         if($scope.calling) return;
-        $scope.calling = true;
-        
-        MonitoraggioService.resend({
-            action: 'not_sent',
-            '_csrf-backend': $scope.csrf,
-            id_invio: $scope.id_invio 
-        }).then(function(res) {
-            $scope.updateData(false);
-            $scope.calling = false;
-        }).catch(function(err){
-            console.log(err);
-            $scope.calling = false;
-        })
+
+        if(confirm("Sicuro di voler effettuare questa azione?")) {
+            $scope.calling = true;
+            
+            MonitoraggioService.resend({
+                action: 'not_sent',
+                '_csrf-backend': $scope.csrf,
+                id_invio: $scope.id_invio 
+            }).then(function(res) {
+                $scope.updateData(false);
+                $scope.calling = false;
+            }).catch(function(err){
+                console.log(err);
+                $scope.calling = false;
+            })
+        }
     }
     $scope.resendSelected = function() {
         if($scope.calling) return;
+
+        
+
         if($scope.gridExpandableContactsApi.selection.getSelectAllState()
             && $scope.gridExpandableContactsApi.selection.getSelectedGridRows().length == $scope.uiGridExpandable.data.length
             ) {
             $scope.resend();
         } else {
-            var ret_array = [];
-            $scope.gridExpandableContactsApi.selection.getSelectedGridRows().map( function(selected) {
-                ret_array.push( selected.entity.id );
-            } );
-            //console.log(ret_array);
-            if(ret_array.length > 0) {
-                $scope.calling = true;
-                MonitoraggioService.resend({
-                    action: 'selected',
-                    '_csrf-backend': $scope.csrf,
-                    id_invio: $scope.id_invio,
-                    contacts: JSON.stringify(ret_array)
-                }).then(function(res) {
-                    $scope.updateData(false);
-                    $scope.calling = false;
-                }).catch(function(err){
-                    console.log(err);
-                    $scope.calling = false;
-                })
-            } else {
-                alert("Seleziona contatti");
+
+            if(confirm("Sicuro di voler effettuare questa azione?")) {
+                var ret_array = [];
+                $scope.gridExpandableContactsApi.selection.getSelectedGridRows().map( function(selected) {
+                    ret_array.push( selected.entity.id );
+                } );
+                //console.log(ret_array);
+                if(ret_array.length > 0) {
+                    $scope.calling = true;
+                    MonitoraggioService.resend({
+                        action: 'selected',
+                        '_csrf-backend': $scope.csrf,
+                        id_invio: $scope.id_invio,
+                        contacts: JSON.stringify(ret_array)
+                    }).then(function(res) {
+                        $scope.updateData(false);
+                        $scope.calling = false;
+                    }).catch(function(err){
+                        console.log(err);
+                        $scope.calling = false;
+                    })
+                } else {
+                    alert("Seleziona contatti");
+                }
             }
         }
+        
 
     }
 
@@ -2838,7 +2883,7 @@ angular.module('AppRubrica', ['uiGmapgoogle-maps', 'region.helpers','agGrid',
   };
 })
 .filter('tipoRiferimento', function() {
-  return function(input) {      
+  return function(input) {    
     return input.tipologia_riferimento
   };
 })

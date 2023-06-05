@@ -56,10 +56,12 @@ $select2Options = [
 
     <?= $form->field($model, 'modello')->textInput(['maxlength' => true]) ?>
 
+    <?= $form->field($model, 'device_id')->textInput()->label('Device ID (per elicotteri)') ?>
+
 
     <?= 
         $form->field($model, 'idtipo', ['options' => ['class'=>'']])->widget(Select2::classname(), [
-            'data' => ArrayHelper::map( UtlAutomezzoTipo::find()->all(), 'id', 'descrizione'),
+            'data' => ArrayHelper::map( UtlAutomezzoTipo::find()->orderBy(['descrizione'=>SORT_ASC])->all(), 'id', 'descrizione'),
             'options' => [
                 'placeholder' => 'Tipo...',
                 'ng-model' => 'ctrl.tipo',

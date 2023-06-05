@@ -35,7 +35,7 @@ $this->registerJs($js, $this::POS_READY);
 $heading = '<h3 class="panel-title"><i class="fas fa-list"></i> '.Html::encode('Lista richieste DOS').'</h3>';
 
 
-    if(Yii::$app->user->can('createRichiestaDos')) $heading .= Html::button(
+    if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('createRichiestaDos')) $heading .= Html::button(
                 '<i class="glyphicon glyphicon-plus"></i> Nuova richiesta DOS',
                 [
                     'title' => Yii::t('app', 'Nuova richiesta DOS'),
@@ -63,7 +63,33 @@ $heading = '<h3 class="panel-title"><i class="fas fa-list"></i> '.Html::encode('
     ],
     
     'columns' => [
-        
+        [
+            'class' => 'yii\grid\ActionColumn',
+            'template'=>'{update}',
+            'buttons' => [
+                'update' => function ($url, $model) {
+                    return ($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('updateRichiestaDos')) ? Html::a('<span class="fa fa-pencil"></span>&nbsp;&nbsp;',
+                        '#',
+                        [
+                            'title' => Yii::t('app', 'Aggiorna richiesta DOS'),
+                            'data-toggle'=>'tooltip',
+                            'class' => 'updateDos',
+                            'location' => 'update-dos?id='.$model->id
+                        ]) : "" ;
+                },
+            ],
+        ],
+        [
+            'attribute' => 'engaged',
+            'label' => 'Ingaggiato',
+            'value' => function($data){
+                return $data->engaged ? 'Si' : 'No';
+            }
+        ],
+        [
+            'label' => 'Cod. DOS',
+            'attribute' => 'codicedos'
+        ],
         [
             'attribute' => 'created_at',
             'label' => 'Data richiesta',
@@ -88,29 +114,27 @@ $heading = '<h3 class="panel-title"><i class="fas fa-list"></i> '.Html::encode('
             'label' => 'Comunicazione',
             'attribute' => 'comunicazione.oggetto'
         ],
+        
         [
-            'class' => 'yii\grid\ActionColumn',
-            'template'=>'{update}',
-            'buttons' => [
-                'update' => function ($url, $model) {
-                    return (Yii::$app->user->can('updateRichiestaDos')) ? Html::a('<span class="fa fa-pencil"></span>&nbsp;&nbsp;',
-                        '#',
-                        [
-                            'title' => Yii::t('app', 'Aggiorna richiesta DOS'),
-                            'data-toggle'=>'tooltip',
-                            'class' => 'updateDos',
-                            'location' => 'update-dos?id='.$model->id
-                        ]) : "" ;
-                },
-            ],
+            'label' => 'Note',
+            'attribute' => 'motivo_rifiuto',
+            'format' => 'raw',
+            'value' => function($data){
+                $str = '<div>';
+                if($data->comunicazione && !empty($data->comunicazione->contenuto)) $str.='<p>COMUNICAZIONE: '.Html::encode($data->comunicazione->contenuto) . '</p>';
+                if(!empty($data->motivo_rifiuto)) $str.='<p>NOTE: '.Html::encode($data->motivo_rifiuto) . '</p>';
+                $str .= '</div>';
+                return $str;
+            }
         ],
+        
     ],
 ]); ?>
 
 
 
 <?php
-if(Yii::$app->user->can('createRichiestaDos')) :
+if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('createRichiestaDos')) :
     // MODAL SEND MAIL RICHIESTA DOS
     Modal::begin([
         'id' => 'modal-dos',
@@ -127,7 +151,7 @@ endif;
 
 
 <?php
-if(Yii::$app->user->can('updateRichiestaDos')) :
+if($this->context->action->id == 'gestione-evento' && Yii::$app->user->can('updateRichiestaDos')) :
     // MODAL UPDATE DOS
     Modal::begin([
         'id' => 'modal-update-dos',

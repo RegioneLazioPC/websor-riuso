@@ -12,18 +12,24 @@ use common\models\LocComune;
 use kartik\widgets\DateTimePicker;
 
 
-$elicotteri = UtlAutomezzo::find()->joinWith(['tipo'])->where(['UPPER(utl_automezzo_tipo.descrizione)' => 'ELICOTTERO'])->asArray()->all();
+$elicotteri = UtlAutomezzo::find()->joinWith(['tipo'])->where(['UPPER(utl_automezzo_tipo.descrizione)' => 'ELICOTTERO'])
+->orderBy(['targa'=>SORT_ASC])->asArray()->all();
 /* @var $this yii\web\View */
 /* @var $model common\models\UtlEvento */
 /* @var $form yii\widgets\ActiveForm */
 if(!$model->engaged) $model->engaged = 0;
 $actioForm = !isset($model->id) ? 'evento/create-elicottero' : 'evento/update-elicottero?id='.$model->id;
 
+
+$curr = new \DateTime();
+$curr->setTimezone(new \DateTimezone('Europe/Rome'));
+
 $form = ActiveForm::begin([
     'action' =>[$actioForm],
     'id' => 'newElicottero'
 ]);
 ?>
+
 <div class="row">
     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
 
@@ -69,7 +75,14 @@ $form = ActiveForm::begin([
                         
                         echo $form->field($model, 'id_elicottero', ['options'=>['class'=>'col-lg-8 no-pl']])->dropDownList(
                             ArrayHelper::map( $elicotteri, 'id', 'targa'), 
-                            ['options' => ['SOPPRESSIONE'=>['selected'=>true]]])->label('Codice elicottero');
+                            [
+                                'options' => [
+                                    'SOPPRESSIONE'=>['selected'=>true]
+                                ],
+                                'prompt' => 'Seleziona elicottero...'
+                            ]
+                        )
+                        ->label('Codice elicottero');
                             
                     }
                 ?>
@@ -79,6 +92,8 @@ $form = ActiveForm::begin([
                         <?php 
                         if(!empty($model->dataora_decollo)){
                             $dt = \DateTime::createFromFormat('Y-m-d H:i:s', $model->dataora_decollo);
+                            if(is_bool($dt)) $dt = new \DateTime();
+                            
                             $model->dataora_decollo = $dt->format('d-m-Y H:i');
                             $model->date = $dt->format('d-m-Y');
                             $model->hour = $dt->format('H');
@@ -87,6 +102,7 @@ $form = ActiveForm::begin([
                         ?>
                         <div class="col-sm-6 no-pl">
                         <?php
+                        if(empty($model->date)) $model->date = $curr->format('d-m-Y');
                         echo $form->field($model, 'date', [])->textInput(); 
                         ?>
                         </div>
@@ -100,7 +116,79 @@ $form = ActiveForm::begin([
                         echo $form->field($model, 'minutes', [])->textInput(['type'=>'number','min'=>0,'max'=>59]); 
                         ?>
                         </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row m5w m20h bg-grayLighter box_shadow">
+                <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 p10h">
+                    <div class="col-sm-6 no-pl">
+                        <h5>Data e ora arrivo stimato</h5>
+                        <?php 
+                        if(!empty($model->dataora_arrivo_stimato)){
+                            $dt = \DateTime::createFromFormat('Y-m-d H:i:s', $model->dataora_arrivo_stimato);
+                            $model->dataora_arrivo_stimato = $dt->format('d-m-Y H:i');
+                            $model->date_arrivo_stimato = $dt->format('d-m-Y');
+                            $model->hour_arrivo_stimato = $dt->format('H');
+                            $model->minutes_arrivo_stimato = $dt->format('i');
+                        }
+                        ?>
+                        <div class="col-sm-6 no-pl">
+                        <?php
+                        if(empty($model->date_arrivo_stimato)) $model->date_arrivo_stimato = $curr->format('d-m-Y');
+                        echo $form->field($model, 'date_arrivo_stimato', [])->label('Data')->textInput(); 
+                        ?>
+                        </div>
+                        <div class="col-sm-3 no-pl">
+                        <?php
+                        echo $form->field($model, 'hour_arrivo_stimato', [])->label('ore')->textInput(['type'=>'number','min'=>0,'max'=>24]); 
+                        ?>
+                        </div>
+                        <div class="col-sm-3 no-pl">
+                        <?php
+                        echo $form->field($model, 'minutes_arrivo_stimato', [])->label('minuti')->textInput(['type'=>'number','min'=>0,'max'=>59]); 
+                        ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row m5w m20h bg-grayLighter box_shadow">
+                <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 p10h">
+                    <div class="col-sm-6 no-pl">
+                        <h5>Numero di lanci</h5>
                         
+                        <?php
+                        echo $form->field($model, 'n_lanci', [])->label('Numero')->textInput(['type'=>'number']); 
+                        ?>
+                        
+                    </div>
+                    <div class="col-sm-6 no-pl">
+                        <h5>Data e ora atterraggio</h5>
+                        <?php 
+                        if(!empty($model->dataora_atterraggio)){
+                            $dt = \DateTime::createFromFormat('Y-m-d H:i:s', $model->dataora_atterraggio);
+
+                            $model->dataora_atterraggio = $dt->format('d-m-Y H:i');
+                            $model->date_atterraggio = $dt->format('d-m-Y');
+                            $model->hour_atterraggio = $dt->format('H');
+                            $model->minutes_atterraggio = $dt->format('i');
+                        }
+                        ?>
+                        <div class="col-sm-6 no-pl">
+                        <?php
+                        echo $form->field($model, 'date_atterraggio', [])->label('Data')->textInput(); 
+                        ?>
+                        </div>
+                        <div class="col-sm-3 no-pl">
+                        <?php
+                        echo $form->field($model, 'hour_atterraggio', [])->label('ore')->textInput(['type'=>'number','min'=>0,'max'=>24]); 
+                        ?>
+                        </div>
+                        <div class="col-sm-3 no-pl">
+                        <?php
+                        echo $form->field($model, 'minutes_atterraggio', [])->label('minuti')->textInput(['type'=>'number','min'=>0,'max'=>59]); 
+                        ?>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -200,13 +288,16 @@ $form = ActiveForm::begin([
 
 <div class="form-group">
     <?php 
-    if(Yii::$app->user->can('updateRichiestaElicottero')) {
-        echo Html::submitButton('<i class="fa fa-save p5w"></i> Salva e invia mail', ['class' => 'btn btn-success']);
-    } else {
-        echo Html::submitButton('<i class="fa fa-save p5w"></i> Aggiorna', ['class' => 'btn btn-success']);
+    if($model->deleted != 1) {
+        if(Yii::$app->user->can('updateRichiestaElicottero')) {
+            echo Html::submitButton('<i class="fa fa-save p5w"></i> Salva e invia mail', ['class' => 'btn btn-success']);
+        } else {
+            echo Html::submitButton('<i class="fa fa-save p5w"></i> Aggiorna', ['class' => 'btn btn-success']);
+        }
     }
     ?>
 
 </div>
 
 <?php ActiveForm::end(); ?>
+

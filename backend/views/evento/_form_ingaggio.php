@@ -20,12 +20,18 @@ use common\models\tabelle\TblTipoRisorsaMeta;
 
 $meta_keys = "[]";
 try {
+
+    $tipi_risorsa_meta = TblTipoRisorsaMeta::find()->where(['show_in_column' => 1])->all();
     // creo un array di chiavi da passare al javascript
     // tanto le chiavi sono tutte alfanumeriche
-    $meta_keys = "[{'". implode("'},{'", array_map( function($meta){
-        return Html::encode( $meta->key ) . "':'" . str_replace("'", "\\'", Html::encode( $meta->label ) );
-    }, TblTipoRisorsaMeta::find()->where(['show_in_column'=>1])->all() ) ) . "'}]";
-} catch(\Exception $e) {
+    if (count($tipi_risorsa_meta) > 0) {
+        $meta_keys = "[{'" . implode("'},{'", array_map(function ($meta) {
+            return $meta->key . "':'" . str_replace("\"", "\\\"", str_replace("'", "\\'", $meta->label));
+        }, $tipi_risorsa_meta)) . "'}]";
+    } else {
+        $meta_keys = "[]";
+    }
+} catch (\Exception $e) {
     Yii::error($e->getMessage() . " in UtlIngaggio::23");
 }
 
@@ -74,8 +80,18 @@ window.refresh_select2_type_options = function() {
 ";
 $this->registerJs($js, $this::POS_READY);
 ?>
-<script src="https://maps.googleapis.com/maps/api/js?libraries=places&key=<?php echo Yii::$app->params['google_key'];?>" type="text/javascript"></script>
-<div ng-app="ingaggi" ng-controller="ingaggioSearchController as ctrl" ng-init="inizializza(<?php echo $model->lat;?>,<?php echo $model->lon;?>,<?php echo $meta_keys;?>)">
+<script src="https://maps.googleapis.com/maps/api/js?libraries=places&key=<?php echo Yii::$app->params['google_key']; ?>" type="text/javascript"></script>
+<div ng-app="ingaggi" ng-controller="ingaggioSearchController as ctrl" ng-init="inizializza(<?php echo $model->lat; ?>,<?php echo $model->lon; ?>,<?php echo $meta_keys; ?>)">
+    <p><b><?php
+            if (isset($evento)) {
+                echo "EVENTO NUM: " . $evento->num_protocollo . "<br />";
+
+                $address = (!empty($evento->luogo)) ? $evento->luogo : $evento->indirizzo;
+                if (!empty($evento->comune)) $address .= " (" . $evento->comune->comune . ")";
+
+                echo Html::encode($address);
+            }
+            ?></b></p>
     <div class="row m5w m20h bg-grayLighter box_shadow">
         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 p10h">
             <div class="utl-ingaggio-form">
@@ -85,59 +101,59 @@ $this->registerJs($js, $this::POS_READY);
                 <div class="row">
                     <div class="col-md-6">
 
-                    <?php
+                        <?php
                         $evento = UtlEvento::findOne($model->id_evento);
                         $categorie = UtlCategoriaAutomezzoAttrezzatura::find()->all();
                         $cat_array = [];
                         $selected_categorie = [];
                         $cat_array["0"] = "Tutti";
                         foreach ($categorie as $cat) {
-                            if($evento->tipologia && $cat->id_tipo_evento == $evento->tipologia->id) $selected_categorie[] = $cat->id;
+                            if ($evento->tipologia && $cat->id_tipo_evento == $evento->tipologia->id) $selected_categorie[] = $cat->id;
 
                             $cat_array[$cat->id] = $cat->descrizione;
                         }
-                        echo $form->field($model, 'id_categoria', ['options' => ['class'=>'']])->widget(Select2::classname(), [
+                        echo $form->field($model, 'id_categoria', ['options' => ['class' => '']])->widget(Select2::classname(), [
                             'data' => $cat_array,
-                            'showToggleAll'=>false,
+                            'showToggleAll' => false,
                             'options' => [
-                                'multiple'=>true,
+                                'multiple' => true,
                                 'placeholder' => '',
                                 'ng-model' => 'ctrl.id_categoria',
                                 'ng-disabled' => 'ctrl.ctgr',
                                 'ng-change' => 'changedCategory()',
-                                'ng-init' => "setCategoriaDefault([".implode(",", $selected_categorie)."])"
+                                'ng-init' => "setCategoriaDefault([" . implode(",", $selected_categorie) . "])"
                             ],
                             'pluginOptions' => [
                                 'allowClear' => true
                             ],
                         ])->label('Categoria di mezzi/attrezzature');
-                        
-                    ?>
 
-                   
+                        ?>
+
+
                     </div>
                     <div class="col-md-6">
-                    <?php
-                        
+                        <?php
+
                         $options = UtlAggregatoreTipologie::find()
-                                    ->all();
+                            ->all();
                         $ang_opt = [];
                         $list = [];
                         foreach ($options as $opt) {
-                            if(!isset($list[$opt->categoria->descrizione])) $list[$opt->categoria->descrizione] = [];
+                            if (!isset($list[$opt->categoria->descrizione])) $list[$opt->categoria->descrizione] = [];
 
                             $list[$opt->categoria->descrizione][$opt->id] = $opt->descrizione;
                             $ang_opt[$opt->id] = [
-                                'ng-disabled'=>'isDisabledTipologiaOption('.$opt->id.', '.$opt->categoria->id.')',
-                                'id' => 'opt_type_mezzo_'.$opt->id
+                                'ng-disabled' => 'isDisabledTipologiaOption(' . $opt->id . ', ' . $opt->categoria->id . ')',
+                                'id' => 'opt_type_mezzo_' . $opt->id
                             ];
                         }
 
-                        echo $form->field($model, 'id_tipologia', ['options' => ['class'=>'']])->widget(Select2::classname(), [
+                        echo $form->field($model, 'id_tipologia', ['options' => ['class' => '']])->widget(Select2::classname(), [
                             'data' => $list,
-                            'showToggleAll'=>false,
+                            'showToggleAll' => false,
                             'options' => [
-                                'multiple'=>true,
+                                'multiple' => true,
                                 'placeholder' => '',
                                 'ng-model' => 'ctrl.id_tipologia',
                                 'ng-change' => 'changedType()',
@@ -148,252 +164,276 @@ $this->registerJs($js, $this::POS_READY);
                                 'allowClear' => true
                             ],
                         ])->label('Sottocategoria di mezzi/attrezzature');
-                        
-                    ?>
-                    
+
+                        ?>
+
                     </div>
                 </div>
-                
-                
+
+
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <?php
 
                         $ang_opt = [];
                         $list = [];
-                        
 
-                        $automezzo = UtlAutomezzoTipo::find()->with(['aggregatori','aggregatori.categoria'])->asArray()->all();
+
+                        $automezzo = UtlAutomezzoTipo::find()->with(['aggregatori', 'aggregatori.categoria'])->orderBy(['descrizione' => SORT_ASC])->asArray()->all();
                         foreach ($automezzo as $a) {
                             $aggregatori = [];
                             $categorie = [];
-                            
-                            if($a['aggregatori']):
+
+                            if ($a['aggregatori']) :
 
                                 foreach ($a['aggregatori'] as $agg) {
                                     $aggregatori[] = $agg['id'];
                                     $categorie[] = $agg['categoria']['id'];
-                                    if(!isset($cats[$agg['categoria']['id']])) $cats[$agg['categoria']['id']] = [];
+                                    if (!isset($cats[$agg['categoria']['id']])) $cats[$agg['categoria']['id']] = [];
                                 }
-                            endif;          
+                            endif;
 
-                            $categorie = array_unique($categorie);                   
-                            
+                            $categorie = array_unique($categorie);
+
                             $list[$a['id']] = $a['descrizione'];
                             $ang_opt[$a['id']] = [
-                                'ng-disabled'=>'isDisabledTipoMezzoAttrezzatura('.$a['id'].', ['.implode(",",$categorie).'], ['.implode(",",$aggregatori).'], \''.str_replace("\"","\\\"",json_encode($mappatura_categorie_aggregatori)).'\')',
-                                'id' => 'opt_type_'.$a['id']
+                                'ng-disabled' => 'isDisabledTipoMezzoAttrezzatura(' . $a['id'] . ', [' . implode(",", $categorie) . '], [' . implode(",", $aggregatori) . '], \'' . str_replace("\"", "\\\"", json_encode($mappatura_categorie_aggregatori)) . '\')',
+                                'id' => 'opt_type_' . $a['id']
                             ];
                         }
 
 
-                        echo $form->field($model, 'id_utl_automezzo_tipo', ['options' => ['class'=>'']])->widget(Select2::classname(), [
+                        echo $form->field($model, 'id_utl_automezzo_tipo', ['options' => ['class' => '']])->widget(Select2::classname(), [
                             'data' => $list,
-                            'showToggleAll'=>false,
+                            'showToggleAll' => false,
                             'options' => [
-                                'multiple'=>true,
+                                'multiple' => true,
                                 //'tabindex' => false,
                                 'placeholder' => '',
                                 'ng-model' => 'ctrl.id_utl_automezzo_tipo',
-                                'ng-init' => "ctrl.id_utl_automezzo_tipo = '".$model->id_utl_automezzo_tipo."'",
+                                'ng-init' => "ctrl.id_utl_automezzo_tipo = '" . $model->id_utl_automezzo_tipo . "'",
                                 'options' => $ang_opt
                             ],
                             'pluginOptions' => [
                                 'allowClear' => true
                             ],
                         ])->label('Tipo di mezzo');
-                        
-                    ?>
+
+                        ?>
 
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <?php
                         $ang_opt = [];
                         $list = [];
-                        
 
-                        $attrezzatura = UtlAttrezzaturaTipo::find()->with(['aggregatori','aggregatori.categoria'])->asArray()->all();
+
+                        $attrezzatura = UtlAttrezzaturaTipo::find()->with(['aggregatori', 'aggregatori.categoria'])->orderBy(['descrizione' => SORT_ASC])->asArray()->all();
                         foreach ($attrezzatura as $a) {
                             $aggregatori = [];
                             $categorie = [];
-                            
-                            if($a['aggregatori']):
+
+                            if ($a['aggregatori']) :
 
                                 foreach ($a['aggregatori'] as $agg) {
                                     $aggregatori[] = $agg['id'];
                                     $categorie[] = $agg['categoria']['id'];
-                                    if(!isset($cats[$agg['categoria']['id']])) $cats[$agg['categoria']['id']] = [];
+                                    if (!isset($cats[$agg['categoria']['id']])) $cats[$agg['categoria']['id']] = [];
                                 }
-                            endif;          
+                            endif;
 
-                            $categorie = array_unique($categorie);                   
-                            
+                            $categorie = array_unique($categorie);
+
                             $list[$a['id']] = $a['descrizione'];
                             $ang_opt[$a['id']] = [
-                                'ng-disabled'=>'isDisabledTipoMezzoAttrezzatura('.$a['id'].', ['.implode(",",$categorie).'], ['.implode(",",$aggregatori).'], \''.str_replace("\"","\\\"",json_encode($mappatura_categorie_aggregatori)).'\')',
-                                'id' => 'opt_type_'.$a['id']
+                                'ng-disabled' => 'isDisabledTipoMezzoAttrezzatura(' . $a['id'] . ', [' . implode(",", $categorie) . '], [' . implode(",", $aggregatori) . '], \'' . str_replace("\"", "\\\"", json_encode($mappatura_categorie_aggregatori)) . '\')',
+                                'id' => 'opt_type_' . $a['id']
                             ];
                         }
 
-                        echo $form->field($model, 'id_utl_attrezzatura_tipo', ['options' => ['class'=>'']])->widget(Select2::classname(), [
+                        echo $form->field($model, 'id_utl_attrezzatura_tipo', ['options' => ['class' => '']])->widget(Select2::classname(), [
                             'data' => $list,
-                            'showToggleAll'=>false,
+                            'showToggleAll' => false,
                             'options' => [
-                                'multiple'=>true,
+                                'multiple' => true,
                                 'placeholder' => '',
                                 'ng-model' => 'ctrl.id_utl_attrezzatura_tipo',
-                                'ng-init' => "ctrl.id_utl_attrezzatura_tipo = '".$model->id_utl_attrezzatura_tipo."'",
+                                'ng-init' => "ctrl.id_utl_attrezzatura_tipo = '" . $model->id_utl_attrezzatura_tipo . "'",
                                 'options' => $ang_opt
                             ],
                             'pluginOptions' => [
                                 'allowClear' => true
                             ],
                         ])->label('Tipo di attrezzatura');
-                    ?>
+                        ?>
                     </div>
-                    
+
+                    <div class="col-md-4">
+                        <?php
+                        echo $form->field($model, 'capacita', ['options' => ['type' => 'number']])->textInput(['ng-model' => 'ctrl.capacita'])->label('Capacità >= di');
+                        ?>
+                    </div>
+
                 </div>
 
                 <div class="row">
                     <div class="col-md-4">
-                    <?php 
-                        echo $form->field($model, 'id_provincia', ['options' => ['class'=>'']])->widget(Select2::classname(), [
-                            'data' => ArrayHelper::map( LocProvincia::find()->where([
-                                Yii::$app->params['region_filter_operator'], 
-                                'id_regione', 
+                        <?php
+                        echo $form->field($model, 'id_provincia', ['options' => ['class' => '']])->widget(Select2::classname(), [
+                            'data' => ArrayHelper::map(LocProvincia::find()->where([
+                                Yii::$app->params['region_filter_operator'],
+                                'id_regione',
                                 Yii::$app->params['region_filter_id']
                             ])->all(), 'id', 'provincia'),
                             'options' => [
-                                'multiple'=>true,
+                                'multiple' => true,
                                 'placeholder' => '',
                                 'ng-model' => 'ctrl.id_provincia',
                                 'ng-disabled' => 'ctrl.pr',
-                                'ng-init' => "ctrl.id_provincia = '".$model->id_provincia."'"
+                                'ng-init' => "ctrl.id_provincia = '" . $model->id_provincia . "'"
                             ],
                             'pluginOptions' => [
                                 'allowClear' => true
                             ],
                         ])->label('Limita la ricerca alla provincia di');
 
-                    ?>
+                        ?>
                     </div>
                     <div class="col-md-4">
-                    <?php 
-                        echo $form->field($model, 'id_comune', ['options' => ['class'=>'']])->widget(Select2::classname(), [
-                            'data' => ArrayHelper::map( LocComune::find()->where([
-                                Yii::$app->params['region_filter_operator'], 
-                                'id_regione', 
+                        <?php
+                        echo $form->field($model, 'id_comune', ['options' => ['class' => '']])->widget(Select2::classname(), [
+                            'data' => ArrayHelper::map(LocComune::find()->where([
+                                Yii::$app->params['region_filter_operator'],
+                                'id_regione',
                                 Yii::$app->params['region_filter_id']
-                            ])->all(), 'id', 'comune'),
+                            ])->orderBy(['comune' => SORT_ASC])->all(), 'id', 'comune'),
                             'options' => [
-                                'multiple'=>true,
+                                'multiple' => true,
                                 'placeholder' => '',
                                 'ng-model' => 'ctrl.id_comune',
                                 'ng-disabled' => 'ctrl.cm',
-                                'ng-init' => "ctrl.id_comune = '".$model->id_comune."'"
+                                'ng-init' => "ctrl.id_comune = '" . $model->id_comune . "'"
                             ],
                             'pluginOptions' => [
                                 'allowClear' => true
                             ],
                         ])->label('Limita la ricerca al comune di');
 
-                    ?>
+                        ?>
                     </div>
                     <div class="col-md-4">
                         <div class=" field-utlingaggiosearchform-place">
                             <label class="control-label" for="utlingaggiosearchform-place">Indirizzo</label>
-                            <input type="text" id="utlingaggiosearchform-place" class="form-control" options="autocompleteOptions" g-places-autocomplete 
-                                ng-model="place">
+                            <input type="text" id="utlingaggiosearchform-place" class="form-control" options="autocompleteOptions" g-places-autocomplete ng-model="place">
 
                             <div class="help-block"></div>
                         </div>
-                        
+
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col-md-6">
-                    <?php 
-                        echo $form->field($model, 'specializzazioni', ['options' => ['class'=>'']])->widget(Select2::classname(), [
-                            'data' => ArrayHelper::map( TblSezioneSpecialistica::find()->all(), 'id', 'descrizione'),
-                            'showToggleAll'=>false,
+                        <?php
+                        $sp = [];
+                        foreach ($evento->specializzazione as $specializzazione) {
+                            $sp[] = $specializzazione->id;
+                        }
+
+
+                        echo $form->field($model, 'specializzazioni', ['options' => ['class' => '']])->widget(Select2::classname(), [
+                            'data' => ArrayHelper::map(TblSezioneSpecialistica::find()->orderBy(['descrizione' => SORT_ASC])->all(), 'id', 'descrizione'),
+                            'showToggleAll' => false,
                             'options' => [
-                                'multiple'=>true,
+                                'multiple' => true,
                                 'placeholder' => '',
                                 'ng-model' => 'ctrl.specializzazioni',
                                 'ng-disabled' => 'ctrl.ctgr',
-                                'ng-init' => "ctrl.specializzazioni = '".$model->specializzazioni."'"
+                                'ng-init' => "ctrl.specializzazioni = setSpecializzazioni([" . implode(",", $sp) . "])"
                             ],
                             'pluginOptions' => [
                                 'allowClear' => true
                             ],
                         ]);
-                    ?>
+                        ?>
                     </div>
                     <div class="col-md-6">
-                    <?php 
+                        <?php
                         echo $form->field($model, 'num_comunale', ['options' => []])->textInput(['ng-model' => 'ctrl.num_comunale',]);
-                    ?>
+                        ?>
                     </div>
-                    
+
                 </div>
                 <div class="row">
                     <div class="col-md-6">
-                    <?php
-                    $orgs = VolOrganizzazione::find()->all();
-                    $data = array();
-                    foreach ($orgs as $org) {
-                        $data[$org->id] = ($org->ref_id) ? $org->ref_id . " - " . $org->denominazione : $org->denominazione;
-                    }
-                    echo $form->field($model, 'id_organizzazione', ['options' => ['class'=>'']])->widget(Select2::classname(), [
+                        <?php
+                        if (Yii::$app->FilteredActions->type == 'comunale') {
+                            $comune = LocComune::findOne(['codistat' => Yii::$app->params['websorCitiesIstat']]);
+                            $orgs = VolOrganizzazione::find()
+                                ->joinWith(['convenzione', 'volSedes'])
+                                ->where(['vol_sede.comune' => $comune->id])
+                                ->orWhere(['not', ['vol_convenzione.id' => null]])
+                                ->orderBy(['ref_id' => SORT_ASC])
+                                ->all();
+                        } else {
+                            $orgs = VolOrganizzazione::find()->orderBy(['ref_id' => SORT_ASC])->all();
+                        }
+
+                        $data = array();
+                        foreach ($orgs as $org) {
+                            $data[$org->id] = ($org->ref_id) ? $org->ref_id . " - " . $org->denominazione : $org->denominazione;
+                        }
+                        echo $form->field($model, 'id_organizzazione', ['options' => ['class' => '']])->widget(Select2::classname(), [
                             'data' => $data,
-                            'showToggleAll'=>false,
+                            'showToggleAll' => false,
                             'options' => [
-                                'multiple'=>true,
+                                'multiple' => true,
                                 'tabindex' => false,
                                 'placeholder' => '',
                                 'ng-model' => 'ctrl.id_organizzazione',
-                                'ng-init' => "ctrl.id_organizzazione = '".$model->id_organizzazione."'"
+                                'ng-init' => "ctrl.id_organizzazione = '" . $model->id_organizzazione . "'"
                             ],
                             'pluginOptions' => [
                                 'allowClear' => true
                             ],
                         ])->label('Nome organizzazione');
 
-                    ?>
+                        ?>
                     </div>
                     <div class="col-md-6">
-                        <?php 
+                        <?php
 
-                        echo $form->field($model, 'distance', ['options'=>[
-                            'class'=>'no-p',
+                        echo $form->field($model, 'distance', ['options' => [
+                            'class' => 'no-p',
                             'ng-model' => 'ctrl.distance',
                             'ng-disabled' => 'ctrl.no_d',
-                            'ng-init' => "ctrl.distance = '".$model->distance."'"
-                            ]])->dropDownList([ 
-                            '2' => '2', 
-                            '5' => '5', 
-                            '10' => '10', 
-                            '25' => '25', 
-                            '50' => '50', 
-                            '100' => '100', 
-                            '200' => '200', 
-                            ], ['prompt' => '', 'ng-model' => 'ctrl.distance',
+                            'ng-init' => "ctrl.distance = '" . $model->distance . "'"
+                        ]])->dropDownList([
+                            '2' => '2',
+                            '5' => '5',
+                            '10' => '10',
+                            '25' => '25',
+                            '50' => '50',
+                            '100' => '100',
+                            '200' => '200',
+                        ], [
+                            'prompt' => '', 'ng-model' => 'ctrl.distance',
                             'ng-disabled' => 'ctrl.no_d',
-                            'ng-init' => "ctrl.distance = '".$model->distance."'"])->label('Limita distanza max a:') ?>
+                            'ng-init' => "ctrl.distance = '" . $model->distance . "'"
+                        ])->label('Limita distanza max a:') ?>
                     </div>
                 </div>
 
-               
+
                 <div class="row">
                     <div class="col-md-6">
-                        <?php  
-                        echo $form->field($model, 'sort', ['options'=>[
-                            'class'=>'no-p',
+                        <?php
+                        echo $form->field($model, 'sort', ['options' => [
+                            'class' => 'no-p',
                             'ng-model' => 'ctrl.sort',
                             'ng-disabled' => 'ctrl.no_d',
-                            'ng-init' => "ctrl.sort = '".$model->sort."'"
-                            ]])->dropDownList([ 
+                            'ng-init' => "ctrl.sort = '" . $model->sort . "'"
+                        ]])->dropDownList([
                             'disponibilita_oraria_sede' => 'Disponibilità oraria sede',
                             'tipo_mezzo' => 'Tipo automezzo',
                             'tipo_attrezzatura' => 'Tipo attrezzatura',
@@ -401,27 +441,31 @@ $this->registerJs($js, $this::POS_READY);
                             'organizzazione' => 'Organizzazione',
                             'specializzazione' => 'Specializzazione',
                             'id_sede' => 'Identificativo sede'
-                            ], ['prompt' => '', 'ng-model' => 'ctrl.sort',
+                        ], [
+                            'prompt' => '', 'ng-model' => 'ctrl.sort',
                             'ng-disabled' => 'ctrl.no_d',
-                            'ng-init' => "ctrl.sort = '".$model->sort."'"])->label('Ordina per') ?>
+                            'ng-init' => "ctrl.sort = '" . $model->sort . "'"
+                        ])->label('Ordina per') ?>
                     </div>
                     <div class="col-md-6">
-                        <?php 
+                        <?php
 
-                        echo $form->field($model, 'sort_order', ['options'=>[
-                            'class'=>'no-p',
+                        echo $form->field($model, 'sort_order', ['options' => [
+                            'class' => 'no-p',
                             'ng-model' => 'ctrl.sort_order',
                             'ng-disabled' => 'ctrl.no_d',
-                            'ng-init' => "ctrl.sort_order = '".$model->sort_order."'"
-                            ]])->dropDownList([ 
-                            'asc'=>'ascendente',
+                            'ng-init' => "ctrl.sort_order = '" . $model->sort_order . "'"
+                        ]])->dropDownList([
+                            'asc' => 'ascendente',
                             'desc' => 'discendente'
-                            ], ['prompt' => '', 'ng-model' => 'ctrl.sort_order',
+                        ], [
+                            'prompt' => '', 'ng-model' => 'ctrl.sort_order',
                             'ng-disabled' => 'ctrl.no_d',
-                            'ng-init' => "ctrl.sort_order = '".$model->sort_order."'"])->label('Direzione ordinamento') ?>
+                            'ng-init' => "ctrl.sort_order = '" . $model->sort_order . "'"
+                        ])->label('Direzione ordinamento') ?>
                     </div>
                 </div>
-                
+
 
                 <div class="form-group">
                     <?php echo Html::button('Annulla', ['class' => 'btn']) ?>
@@ -429,35 +473,34 @@ $this->registerJs($js, $this::POS_READY);
                 </div>
 
                 <?php ActiveForm::end(); ?>
-                
+
             </div>
-        </div>        
+        </div>
     </div>
     <div ng-if="initialized">
-        <ui-gmap-google-map 
-            center='{latitude: <?php echo $model->lat;?>, longitude: <?php echo $model->lon;?>}' 
-            zoom='map.zoom' 
-            ng-cloak>
-            <ui-gmap-marker ng-repeat="marker in markers" coords="{latitude: marker.lat, longitude: marker.lon}" options="marker.options" events="marker.events" idkey="marker.id">      
+        <ui-gmap-google-map center='{latitude: <?php echo $model->lat; ?>, longitude: <?php echo $model->lon; ?>}' zoom='map.zoom' ng-cloak>
+            <ui-gmap-marker ng-repeat="marker in markers" coords="{latitude: marker.lat, longitude: marker.lon}" options="marker.options" events="marker.events" idkey="marker.id">
                 <ui-gmap-window>
                     <div class="popup">
-                        <h2>{{marker.organizzazione}}</a></h2>                        
+                        <h2>{{marker.organizzazione}}</a></h2>
                     </div>
-                </ui-gmap-window>                  
+                </ui-gmap-window>
             </ui-gmap-marker>
         </ui-gmap-google-map>
     </div>
-    <div  ng-if="initialized" class="grid-view hide-resize" style="margin-top: 30px;">
+    <div ng-if="initialized" class="grid-view hide-resize" style="margin-top: 30px;">
         <div class="panel panel-default">
-            <div class="panel-heading">  
-                    <div class="pull-right"></div>
+            <div class="panel-heading">
+                <div class="pull-right"></div>
                 <h3 class="panel-title"><em class="glyphicon glyphicon-bell"></em> Organizzazioni di volontariato</h3>
             </div>
-            
+
             <div class="clearfix"></div>
         </div>
         <div class="row">
+
             <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                <p class="text-danger"><b>* I record con sfondo rosso potrebbero essere stati attivati da un'altra sala in base ai messaggi provenienti dal cap, puoi comunque attivarli</b></p>
                 <div class="table-responsive">
                     <table class="table table-bordered" summary="Risultati">
                         <thead>
@@ -475,15 +518,15 @@ $this->registerJs($js, $this::POS_READY);
                             </tr>
                         </thead>
                         <tbody>
-                            <tr ng-class="{'bg-success': !result.ref_engaged && !hasEngagedInSession(result)}" ng-repeat="result in results" >
+                            <tr ng-class="{'bg-danger': result.mezzoAttivatoDaAltraSala && result.mezzoAttivatoDaAltraSala.targa && result.tipologia_risorsa == 'automezzo', 'bg-success': !result.ref_engaged && !hasEngagedInSession(result)}" ng-repeat="result in results">
                                 <td>{{result.codice_associazione}}</td>
                                 <td style="max-width: 150px; white-space: normal;">{{result.denominazione_organizzazione}}</td>
                                 <td style="max-width: 200px; white-space: normal;">
-                                    {{result.ambito}}
+                                    Ambito: {{result.ambito}}
                                     <p ng-repeat="value in result.contattiAttivazioni track by $index">{{getContact(value)}}</p>
                                 </td>
-                                <td >{{result.disponibilita_oraria_sede}}</td>
-                                <?php 
+                                <td>{{result.disponibilita_oraria_sede}}</td>
+                                <?php
                                 // la specializzazione è corretto che non ci sia
                                 ?>
                                 <td style="max-width: 150px; white-space: normal;">{{result.ref_identifier}} {{result.ref_tipo_descrizione}}</td>
@@ -495,20 +538,19 @@ $this->registerJs($js, $this::POS_READY);
                                     </ul>
                                 </td>
                                 <td style="max-width: 150px; white-space: normal;">{{getSpecializzazioni( result.sezioneSpecialistica ) }}</td>
-                                <td ><a style="cursor:pointer" ng-click="calculate([result.lon, result.lat], result)" ng-if="!result.time"><span class="fa fa-calendar"></span></a>
+                                <td><a style="cursor:pointer" ng-click="calculate([result.lon, result.lat], result)" ng-if="!result.time"><span class="fa fa-calendar"></span></a>
                                     <span ng-if="result.time">{{result.time}}</span>
                                 </td>
-                                <td >{{distanceFormat(result.distance)}}</td>
-                                <td >
-                                    <?php 
-                                    if(Yii::$app->user->can('createIngaggio')) :
-                                    ?><a style="cursor:pointer" 
-                                    ng-click="engage(result, <?php echo $model->id_evento;?>)">
-                                        <span ng-if="!result.ref_engaged && !engaging && !hasEngagedInSession(result)" class="fa fa-plus"></span>
-                                    </a>
-                                    <?php 
-                                    endif;                                       
-                                    ?> 
+                                <td>{{distanceFormat(result.distance)}}</td>
+                                <td>
+                                    <?php
+                                    if (Yii::$app->user->can('createIngaggio')) :
+                                    ?><a style="cursor:pointer" ng-click="engage(result, <?php echo $model->id_evento; ?>)">
+                                            <span ng-if="!result.ref_engaged && !engaging && !hasEngagedInSession(result)" class="fa fa-plus"></span>
+                                        </a>
+                                    <?php
+                                    endif;
+                                    ?>
                                 </td>
                             </tr>
                         </tbody>
@@ -520,7 +562,7 @@ $this->registerJs($js, $this::POS_READY);
 
                     <ul class="pagination">
                         <li class="prev"><span ng-click="prevPage()">«</span></li>
-                        <li ng-repeat="n in show_pages" ng-class="{active: n == ctrl.page}" >
+                        <li ng-repeat="n in show_pages" ng-class="{active: n == ctrl.page}">
                             <a href="#" ng-click="loadPage(n)">{{n}}</a>
                         </li>
                         <li class="next"><a ng-click="nextPage()">»</a></li>
@@ -528,6 +570,5 @@ $this->registerJs($js, $this::POS_READY);
                 </div>
             </div>
         </div>
-    </div>        
+    </div>
 </div>
-

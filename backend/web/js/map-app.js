@@ -3,6 +3,8 @@
  */
 angular.module('mapAngular', ['uiGmapgoogle-maps', 'region.helpers'])
 .config(function(uiGmapGoogleMapApiProvider, appConfig) {
+    if(!window.navigator.onLine) return;
+    
     uiGmapGoogleMapApiProvider.configure({
         key: google_map_key,
         v: appConfig.MAP.version, 
@@ -44,7 +46,6 @@ angular.module('mapAngular', ['uiGmapgoogle-maps', 'region.helpers'])
     $scope.markers = [];
 
     MapService.getEvents().then(function (res) {
-        console.log('response', res)
         angular.forEach(res.data, function(item, key) {
 
             var statoEvento = '';
@@ -84,7 +85,6 @@ angular.module('mapAngular', ['uiGmapgoogle-maps', 'region.helpers'])
     });
 
     $scope.hasVal = function(marker, data) {
-        console.log(marker, data)
         return marker[data] ? true : false
     }
 
@@ -109,9 +109,7 @@ angular.module('mapAngular', ['uiGmapgoogle-maps', 'region.helpers'])
     $scope.markers = [];
 
     function call() {
-        console.log('chiama')
         MapService.getSegnalazioni().then(function (res) {
-            console.log('result', res);
             angular.forEach(res.data, function (item, key) {
 
                 

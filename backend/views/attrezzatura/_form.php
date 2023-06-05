@@ -34,7 +34,7 @@ $select2Options = [
     
     <?= 
         $form->field($model, 'idtipo', ['options' => ['class'=>'']])->widget(Select2::classname(), [
-            'data' => ArrayHelper::map( UtlAttrezzaturaTipo::find()->all(), 'id', 'descrizione'),
+            'data' => ArrayHelper::map( UtlAttrezzaturaTipo::find()->orderBy(['descrizione'=>SORT_ASC])->all(), 'id', 'descrizione'),
             'options' => [
                 'placeholder' => 'Tipo...',
                 'ng-model' => 'ctrl.tipo',

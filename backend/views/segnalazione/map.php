@@ -11,10 +11,14 @@ $this->title = 'Mappa segnalazioni';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 
+<?= $this->render('../evento/_partial_elicotteri_volo', []); ?>
+
 <div id="map-canvas" class="site-index" ng-app="mapAngular">
 
     <h1><?= Html::encode($this->title) ?></h1>
-    <p class="carto-link"><?php echo Html::a('Cartografia', ['/sistema-cartografico?hide_events=1&visible_reports=1'], ['class' => 'btn btn-default']) ?></p>
+    <?php if(Yii::$app->FilteredActions->showCartografico): ?>
+        <p class="carto-link"><?php echo Html::a('Cartografia', ['/sistema-cartografico?hide_events=1&visible_reports=1'], ['class' => 'btn btn-default']) ?></p>
+    <?php endif; ?>
     <div ng-controller="mapSegnalazioneController">
         <ui-gmap-google-map center='{latitude: <?php echo Yii::$app->params['lat']; ?>, longitude: <?php echo Yii::$app->params['lng']; ?>}' zoom='map.zoom'>
 

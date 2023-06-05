@@ -11,6 +11,7 @@ $this->title = $model->id;
 $this->params['breadcrumbs'][] = ['label' => 'Ingaggi', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
+$can_view_feedback_attivazioni = Yii::$app->user->can('listAttivazioniToCheck');
 
 $js = '
 
@@ -42,59 +43,81 @@ $this->registerJs($js, $this::POS_READY);
         ]); ?>
     </p>
 
+    <?php 
 
     
+    $col_w = $can_view_feedback_attivazioni ? '6' : '12';
 
-    <?= DetailView::widget([
-        'model' => $model,
-        'attributes' => [
-            'id',
-            'idevento',
-            [
-                'label'  => 'Organizzazione',
-                'value'  => ($model->organizzazione) ? $model->organizzazione->denominazione : ""
-            ],
-            [
-                'label'  => 'Sede',
-                'value'  => ($model->sede) ? $model->sede->indirizzo . " - " . $model->sede->tipo : ""
-            ],
-            [
-                'label'  => 'Automezzo',
-                'value'  => ($model->automezzo) ? $model->automezzo->tipo->descrizione . " - " . $model->automezzo->targa : ""
-            ],
-            [
-                'label'  => 'Attrezzatura',
-                'value'  => ($model->attrezzatura) ? $model->attrezzatura->tipo->descrizione : ""
-            ],
-            'note:ntext',
-            [
-                'label' => 'Stato',
-                'attribute' => 'stato',
-                'value' => function($model) {
-                    if($model->stato != 2) return $model->getStato();
+    ?>
+    <div class="row m5w m20h">
+        <div class="col-xs-12 col-sm-12 col-md-<?php echo $col_w;?> col-lg-<?php echo $col_w;?> p10w p10h">
+            <h5 class="m10h text-uppercase color-gray">Dati attivazione</h5>
+                <?= DetailView::widget([
+                    'model' => $model,
+                    'attributes' => [
+                        'id',
+                        'idevento',
+                        [
+                            'label'  => 'Organizzazione',
+                            'value'  => ($model->organizzazione) ? $model->organizzazione->denominazione : ""
+                        ],
+                        [
+                            'label'  => 'Sede',
+                            'value'  => ($model->sede) ? $model->sede->indirizzo . " - " . $model->sede->tipo : ""
+                        ],
+                        [
+                            'label'  => 'Automezzo',
+                            'value'  => ($model->automezzo) ? $model->automezzo->tipo->descrizione . " - " . $model->automezzo->targa : ""
+                        ],
+                        [
+                            'label'  => 'Attrezzatura',
+                            'value'  => ($model->attrezzatura) ? $model->attrezzatura->tipo->descrizione : ""
+                        ],
+                        'note:ntext',
+                        [
+                            'label' => 'Stato',
+                            'attribute' => 'stato',
+                            'value' => function($model) {
+                                if($model->stato != 2) return $model->getStato();
 
-                    $ret = $model->getStato();
-                    $ret .= " - " . $model->getMotivazioneRifiuto();
-                    if($model->motivazione_rifiuto == 5) $ret .= " - " . $model->motivazione_rifiuto_note;
+                                $ret = $model->getStato();
+                                $ret .= " - " . $model->getMotivazioneRifiuto();
+                                if($model->motivazione_rifiuto == 5) $ret .= " - " . $model->motivazione_rifiuto_note;
 
-                    return $ret;
-                }
-            ],
-            [
-                'label'  => 'Data',
-                'value'  => $model->created_at
-            ],
-            [
-                'label'  => 'Chiusura',
-                'value'  => $model->closed_at
-            ],
-        ],
-    ]) ?>
+                                return $ret;
+                            }
+                        ],
+                        [
+                            'label'  => 'Data',
+                            'format' => 'datetime',
+                            'attribute' => 'created_at'
+                        ],
+                        [
+                            'label'  => 'Chiusura',
+                            'format' => 'datetime',
+                            'attribute' => 'closed_at'
+                        ],
+                    ],
+                ]) ?>
+        </div>
+        <?php if($can_view_feedback_attivazioni) { 
 
+            echo $this->render('_feedback_rl', [
+                'model' => $model,
+                'from' => 'view'
+            ]); 
+
+        } ?>
+
+    </div>
+
+    
     <?php
     
     if(Yii::$app->user->can('adminPermissions') || Yii::$app->user->can('changeDateAttivazioni')){
-        echo Html::button('Modifica data di chiusura e apertura', ['class' => 'btn btn-default', 'id'=>'change_chiusura_date']);
+        echo Html::button('Modifica data di chiusura e apertura', 
+            ['class' => 'btn btn-default', 'id'=>'change_chiusura_date']
+        );
 
         ?>
         <div id="chiusura_date_form" style="display: none;">

@@ -12,6 +12,11 @@ class m180504_142601_create_vol_sede_specializzazione_table extends Migration
      */
     public function safeUp()
     {
+        Yii::$app->db->createCommand("DROP VIEW  IF EXISTS routing.view_organizzazioni")
+            ->execute();
+        Yii::$app->db->createCommand("DROP VIEW  IF EXISTS geo_datas")
+            ->execute();
+
         $this->createTable('utl_specializzazione', [
             'id' => $this->primaryKey(),
             'descrizione' => $this->text()
@@ -34,6 +39,11 @@ class m180504_142601_create_vol_sede_specializzazione_table extends Migration
      */
     public function safeDown()
     {
+        Yii::$app->db->createCommand("DROP VIEW  IF EXISTS routing.view_organizzazioni")
+            ->execute();
+        Yii::$app->db->createCommand("DROP VIEW  IF EXISTS geo_datas")
+            ->execute();
+
         $this->dropForeignKey(
             'fk_vol_sede_specializzazione',
             'vol_sede'

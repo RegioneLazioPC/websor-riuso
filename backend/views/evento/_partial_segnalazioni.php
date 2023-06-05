@@ -64,6 +64,11 @@ use yii\helpers\Html;
             }
         ],
         [
+            'attribute' => 'fonte',
+            'filter'=> Html::activeDropDownList($segnalazioniSearchModel, 'fonte', $segnalazioniSearchModel->getFonteArray(), ['class' => 'form-control','prompt' => 'Tutti']),
+            'label' => 'Fonte'
+        ],
+        [
             'label' => 'Dati segnalante',
             'attribute' => 'utente',
             'format' => 'raw',

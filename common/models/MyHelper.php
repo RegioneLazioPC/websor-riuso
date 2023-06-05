@@ -147,29 +147,32 @@ class MyHelper extends Model
 
         // Geocoding
         $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lon}&key=".Yii::$app->params['google_key'];
+        Yii::info('Chiamo URL GOOGLE: ' . $url, 'api');
+        $proxy = (isset(Yii::$app->params['laziocreaserver']) && isset(Yii::$app->params['proxyUrl'])) ? Yii::$app->params['proxyUrl'] : null;
 
-        if(isset(Yii::$app->params['laziocreaserver']) && isset(Yii::$app->params['proxyUrl'])) :
+        try {
 
-            $proxy = Yii::$app->params['proxyUrl'];
+            //$resp_json = file_get_contents($url);
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_PROXY, $proxy);
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            $data = curl_exec($ch);
+            $curl_errno = curl_errno($ch);
+            $curl_error = curl_error($ch);
+            curl_close($ch);
 
-            $context = array(
-                'http' => array(
-                    'proxy' => $proxy,
-                    'request_fulluri' => True,
-                    ),
-                );
-
-            $context = stream_context_create($context);
-            $resp_json = file_get_contents($url, false, $context);
-        else:
-
-            try {
-                $resp_json = file_get_contents($url);
-            } catch (\Exception $e) {
-                return false;
+            if ($curl_errno > 0) {
+                Yii::info("Errore curl: " . $curl_errno, 'api');
+                throw new \Exception("Errore curl: " . $curl_errno, 1);
+            } else {
+                $resp_json = $data;
             }
 
-        endif;
+        } catch (\Exception $e) {
+            return false;
+        }
 
         // get the json response
         

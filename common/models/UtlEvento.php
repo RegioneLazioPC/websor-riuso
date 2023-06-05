@@ -3,6 +3,8 @@
 namespace common\models;
 
 //use common\components\ApplicationBehavior;
+
+use common\models\cap\CapExposedMessage;
 use Yii;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
@@ -15,6 +17,9 @@ use common\models\LocCivico;
 use common\models\LocIndirizzo;
 
 use common\models\cartografia\ViewCartografiaEvento;
+use common\models\cap\CapMessages;
+use common\models\TblSezioneSpecialistica;
+
 /**
  * This is the model class for table "utl_evento".
  *
@@ -38,7 +43,7 @@ use common\models\cartografia\ViewCartografiaEvento;
  */
 class UtlEvento extends \yii\db\ActiveRecord
 {
-    public $address, $civico, $cap, $add_type, $archived, $google_address, $manual_address, $toponimo_address;
+    public $address, $civico, $cap, $add_type, $archived, $google_address, $manual_address, $toponimo_address, $list_distance; //list_distance solo per lista eventi in associazione nella view della segnalazione
 
     const SCENARIO_CREATE = 'create';
     const SCENARIO_UPDATE = 'update';
@@ -50,7 +55,8 @@ class UtlEvento extends \yii\db\ActiveRecord
         return 'utl_evento';
     }
 
-    public function fields() {
+    public function fields()
+    {
         return array_merge(parent::fields(), ['comune']);
     }
 
@@ -90,9 +96,10 @@ class UtlEvento extends \yii\db\ActiveRecord
     {
         return [
             [['address_type', 'id_indirizzo', 'id_civico', 'id_gestore_evento', 'archived'], 'integer'],
-            [[ 'tipologia_evento'], 'required'],//'lat', 'lon',
-            [['sottotipologia_evento'],'required', 'on' => ['create', 'update']],
-            [['tipologia_evento','sottotipologia_evento','is_public','idparent','idcomune'], 'integer'],
+            [['tipologia_evento'], 'required'], //'lat', 'lon',
+            [['sottotipologia_evento'], 'required', 'on' => ['create', 'update']],
+            [['tipologia_evento', 'sottotipologia_evento', 'idparent', 'idcomune'], 'integer'],
+            [['is_public'], 'boolean'],
             [['note', 'stato', 'num_protocollo'], 'string'],
             [['address', 'civico', 'cap'], 'string'],
             [['lat', 'lon'], 'double'],
@@ -149,14 +156,16 @@ class UtlEvento extends \yii\db\ActiveRecord
     public function scenarios()
     {
         $scenarios = parent::scenarios();
-        $scenarios[self::SCENARIO_CREATE] = ['address_type', 'id_indirizzo', 'id_civico', 'lat', 'lon', 'tipologia_evento','sottotipologia_evento','is_public','idparent','idcomune','note', 'stato', 'num_protocollo','pericolo', 'feriti', 'vittime', 'interruzione_viabilita', 'aiuto_segnalatore','direzione', 'indirizzo', 'luogo', 'distanza', 'idparent', 'dataora_evento', 'dataora_modifica', 'closed_at', 'id_gestore_evento','has_coc', 
+        $scenarios[self::SCENARIO_CREATE] = [
+            'address_type', 'id_indirizzo', 'id_civico', 'lat', 'lon', 'tipologia_evento', 'sottotipologia_evento', 'is_public', 'idparent', 'idcomune', 'note', 'stato', 'num_protocollo', 'pericolo', 'feriti', 'vittime', 'interruzione_viabilita', 'aiuto_segnalatore', 'direzione', 'indirizzo', 'luogo', 'distanza', 'idparent', 'dataora_evento', 'dataora_modifica', 'closed_at', 'id_gestore_evento', 'has_coc',
             'address', 'civico', 'cap', 'add_type', 'google_address', 'manual_address', 'toponimo_address', 'address_type',
             'id_sottostato_evento',
         ];
-        $scenarios[self::SCENARIO_UPDATE] = ['address_type', 'id_indirizzo', 'id_civico', 'lat', 'lon', 'tipologia_evento','sottotipologia_evento','is_public','idparent','idcomune','note', 'stato', 'num_protocollo','pericolo', 'feriti', 'vittime', 'interruzione_viabilita', 'aiuto_segnalatore','direzione', 'indirizzo', 'luogo', 'distanza', 'idparent', 'dataora_evento', 'dataora_modifica', 'closed_at', 'id_gestore_evento','has_coc',
+        $scenarios[self::SCENARIO_UPDATE] = [
+            'address_type', 'id_indirizzo', 'id_civico', 'lat', 'lon', 'tipologia_evento', 'sottotipologia_evento', 'is_public', 'idparent', 'idcomune', 'note', 'stato', 'num_protocollo', 'pericolo', 'feriti', 'vittime', 'interruzione_viabilita', 'aiuto_segnalatore', 'direzione', 'indirizzo', 'luogo', 'distanza', 'idparent', 'dataora_evento', 'dataora_modifica', 'closed_at', 'id_gestore_evento', 'has_coc',
             'address', 'civico', 'cap', 'add_type', 'google_address', 'manual_address', 'toponimo_address', 'address_type',
             'id_sottostato_evento',
-        ]; 
+        ];
         return $scenarios;
     }
 
@@ -164,9 +173,10 @@ class UtlEvento extends \yii\db\ActiveRecord
      * Crea filtro nestato
      * @return [type] [description]
      */
-    public static function getNestedFilterTipologie() {
-        $genitori = \common\models\UtlTipologia::find()->where('idparent is null')->asArray()->all();
-        $figli = \common\models\UtlTipologia::find()->where('idparent is not null')->asArray()->all();
+    public static function getNestedFilterTipologie()
+    {
+        $genitori = \common\models\UtlTipologia::find()->where('idparent is null')->orderBy(['tipologia' => SORT_ASC])->asArray()->all();
+        $figli = \common\models\UtlTipologia::find()->where('idparent is not null')->orderBy(['tipologia' => SORT_ASC])->asArray()->all();
         $types = [];
         $parent_keys = [];
         foreach ($genitori as $genitore) {
@@ -176,9 +186,14 @@ class UtlEvento extends \yii\db\ActiveRecord
         }
 
         foreach ($figli as $figlio) {
-            $types[$parent_keys[$figlio['idparent']]][$figlio['id']] = $figlio['tipologia'];
+            try {
+                $types[$parent_keys[$figlio['idparent']]][$figlio['id']] = $figlio['tipologia'];
+            } catch (\Exception $e) {
+                // tiplogia genitore rimossa senza rimuovere il figlio
+                Yii::error($e->getMessage());
+            }
         }
-        
+
 
         return $types;
     }
@@ -210,6 +225,12 @@ class UtlEvento extends \yii\db\ActiveRecord
         return $this->hasMany(UtlEvento::className(), ['id' => 'idparent']);
     }
 
+    public function getSpecializzazione()
+    {
+        return $this->hasMany(TblSezioneSpecialistica::className(), ['id' => 'id_tbl_sezione_specialistica'])
+            ->viaTable('con_tipo_evento_specializzazione', ['id_utl_tipologia' => 'tipologia_evento']);
+    }
+
     /**
      * @return \yii\db\ActiveQuery
      */
@@ -239,7 +260,7 @@ class UtlEvento extends \yii\db\ActiveRecord
      */
     public function getSegnalazioni()
     {
-        return $this->hasMany(ConEventoSegnalazione::className(), ['idevento'=>'id']);
+        return $this->hasMany(ConEventoSegnalazione::className(), ['idevento' => 'id']);
     }
 
     /**
@@ -278,6 +299,15 @@ class UtlEvento extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
+    public function getRichiesteElicotteroUndeleted()
+    {
+        return $this->hasMany(RichiestaElicottero::className(), ['idevento' => 'id'])
+            ->andOnCondition(['deleted' => 0]);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
     public function getRichiesteElicottero()
     {
         return $this->hasMany(RichiestaElicottero::className(), ['idevento' => 'id']);
@@ -299,14 +329,14 @@ class UtlEvento extends \yii\db\ActiveRecord
         return $this->hasMany(RichiestaCanadair::className(), ['idevento' => 'id']);
     }
 
-    public function getLocIndirizzo() 
+    public function getLocIndirizzo()
     {
-        return $this->hasOne(LocIndirizzo::className(), ['id'=>'id_indirizzo']);
+        return $this->hasOne(LocIndirizzo::className(), ['id' => 'id_indirizzo']);
     }
 
-    public function getLocCivico() 
+    public function getLocCivico()
     {
-        return $this->hasOne(LocCivico::className(), ['id'=>'id_civico']);
+        return $this->hasOne(LocCivico::className(), ['id' => 'id_civico']);
     }
 
     public function getGestore()
@@ -321,17 +351,70 @@ class UtlEvento extends \yii\db\ActiveRecord
 
     public function getSchedacoc()
     {
-        return $this->hasOne(EvtSchedaCoc::className(), ['id_evento'=>'id']);
+        return $this->hasOne(EvtSchedaCoc::className(), ['id_evento' => 'id']);
     }
 
     public function getIngaggi()
     {
-        return $this->hasMany(UtlIngaggio::className(), ['idevento'=>'id']);
+        return $this->hasMany(UtlIngaggio::className(), ['idevento' => 'id']);
     }
 
-    public function getViewCartografia() 
+    public function getViewCartografia()
     {
-        return $this->hasOne(ViewCartografiaEvento::className(), ['id'=>'id']);
+        return $this->hasOne(ViewCartografiaEvento::className(), ['id' => 'id']);
+    }
+
+    public function getCapMessages()
+    {
+        return $this->hasMany(CapMessages::className(), ['id' => 'id_cap_message'])
+            ->via('segnalazioniAll');
+    }
+
+    public function getLastCapMessages()
+    {
+        return $this->hasMany(\common\models\cap\ViewCapMessagesGrouped::className(), ['incident' => 'incident'])
+            ->via('capMessagesBase');
+    }
+
+    public function getCapMessagesBase()
+    {
+        return $this->hasMany(\common\models\cap\ViewCapMessages::className(), ['id' => 'id_cap_message'])
+            ->via('segnalazioniAll');
+    }
+
+    public function getOriginalCapMessage()
+    {
+        return $this->hasMany(CapMessages::className(), ['identifier' => 'cap_message_identifier'])
+            ->via('segnalazioniAll');
+    }
+
+    public function getMainExposedCapMessage()
+    {
+        return $this->hasOne(CapExposedMessage::class, ['id_evento' => 'id'])->onCondition(['message_progr' => 0]);
+    }
+
+    public function getCapMessagesFromReference()
+    {
+        // Recupero il messaggio CAP originale collegato all'evento
+        $mainCap = $this->getMainExposedCapMessage()->one();
+        if(!$mainCap) return [];
+        $data_sent = \DateTime::createFromFormat('Y-m-d H:i:sP', $mainCap->sent);
+        if (is_bool($data_sent)) return [];
+        
+        $identifier = '%' . $mainCap->sender . ',' . $mainCap->identifier . ',' . $data_sent->format('c') . '%';
+        return CapMessages::find()->where(
+            "(json_content->'references')::text ilike :identifier", 
+            [':identifier' => $identifier]
+        )->orderBy(['sent'=>SORT_DESC])->all();
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSaleOperativeEsterne()
+    {
+        return $this->hasMany(SalaOperativaEsterna::class, ['id' => 'id_sala_op_esterna'])
+            ->viaTable('con_evento_sala_esterna', ['id_evento' => 'id']);
     }
 
     /**
@@ -352,12 +435,13 @@ class UtlEvento extends \yii\db\ActiveRecord
      * @param  [type] $insert [description]
      * @return [type]         [description]
      */
-    public function beforeSave($insert) {
-        
-        if($this->lat && $this->lon) $this->geom = [$this->lon, $this->lat];
+    public function beforeSave($insert)
+    {
 
-        if($this->stato == 'Non gestito' && !$insert && $this->num_protocollo) $this->stato = 'In gestione';
-        
+        if ($this->lat && $this->lon) $this->geom = [$this->lon, $this->lat];
+
+        if ($this->stato == 'Non gestito' && !$insert && $this->num_protocollo) $this->stato = 'In gestione';
+
         return parent::beforeSave($insert);
     }
 
@@ -365,27 +449,29 @@ class UtlEvento extends \yii\db\ActiveRecord
     {
         parent::afterSave($insert, $changedAttributes);
 
-        if($insert) :
-            UtlEvento::updateAll([
-                'num_protocollo'=>$this->id."/".date("Y")
-            ], 'id = '.intval($this->id)
-        );
+        if ($insert) :
+            UtlEvento::updateAll(
+                [
+                    'num_protocollo' => $this->id . "/" . date("Y")
+                ],
+                'id = ' . intval($this->id)
+            );
         endif;
 
         if (isset($changedAttributes['stato'])) :
-            if($this->stato == 'Chiuso'):
-                $ingaggi = UtlIngaggio::find()->where(['idevento'=>$this->id])
-                ->andWhere(['!=','stato',2])->all();
+            if ($this->stato == 'Chiuso') :
+                $ingaggi = UtlIngaggio::find()->where(['idevento' => $this->id])
+                    ->andWhere(['!=', 'stato', 2])->all();
                 foreach ($ingaggi as $ingaggio) :
                     $ingaggio->stato = 3;
                     $ingaggio->save();
                 endforeach;
             endif;
         endif;
-        
     }
 
-    public function beforeDelete() {
+    public function beforeDelete()
+    {
         if (!parent::beforeDelete()) {
             return false;
         }
@@ -393,14 +479,16 @@ class UtlEvento extends \yii\db\ActiveRecord
         /**
          * Rendo di nuovo disponibili mezzi e attrezzature ingaggiate sull'evento
          */
-        $ingaggi = \common\models\UtlIngaggio::find()->where(['idevento'=>$this->id])->all();
+        $ingaggi = \common\models\UtlIngaggio::find()->where(['idevento' => $this->id])->all();
         foreach ($ingaggi as $ingaggio) {
-            if($ingaggio->stato == 1) {
-                if($ingaggio->idautomezzo) : \common\models\UtlAutomezzo::updateAll(['engaged'=>false], 'id = '.intval($ingaggio->idautomezzo)); endif;
-                if($ingaggio->idattrezzatura) : \common\models\UtlAttrezzatura::updateAll(['engaged'=>false], 'id = '.intval($ingaggio->idattrezzatura)); endif;
+            if ($ingaggio->stato == 1) {
+                if ($ingaggio->idautomezzo) : \common\models\UtlAutomezzo::updateAll(['engaged' => false], 'id = ' . intval($ingaggio->idautomezzo));
+                endif;
+                if ($ingaggio->idattrezzatura) : \common\models\UtlAttrezzatura::updateAll(['engaged' => false], 'id = ' . intval($ingaggio->idattrezzatura));
+                endif;
             }
         }
-        
+
         return true;
     }
 }

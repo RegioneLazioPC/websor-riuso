@@ -1,10 +1,11 @@
 <?php
 
 use yii\db\Migration;
+use yii\db\Schema;
 
 class m130524_201442_init extends Migration
 {
-    public function up()
+    public function safeUp()
     {
         $tableOptions = null;
         if ($this->db->driverName === 'mysql') {
@@ -145,7 +146,7 @@ class m130524_201442_init extends Migration
 
         $this->createTable('con_utente_extra', [
             'idutente' => $this->integer(),
-            'idextra' => $this->integer()            
+            'idextra' => $this->integer()
         ]);
         
 
@@ -227,8 +228,8 @@ class m130524_201442_init extends Migration
             'id' => $this->primaryKey(),
             'tipologia_evento' => $this->integer(),
             'note' => $this->text(),
-            'lat' => $this->double(11,5),
-            'lon' => $this->double(11,5),
+            'lat' => $this->double(11, 5),
+            'lon' => $this->double(11, 5),
             'idcomune' => $this->integer(),
             'luogo' => $this->string(255),
             'direzione' => $this->string(255),
@@ -346,8 +347,8 @@ class m130524_201442_init extends Migration
             'foto_locale' => $this->binary(),
             'tipologia_evento'=> $this->integer(),
             'note'=> $this->text(),
-            'lat'=> $this->double(7,5), // ??? in altri punti è 11,5
-            'lon'=> $this->double(7,5), // ???
+            'lat'=> $this->double(7, 5), // ??? in altri punti è 11,5
+            'lon'=> $this->double(7, 5), // ???
             'idcomune' => $this->integer(),
             'indirizzo' => $this->string(255),
             'luogo' => $this->string(255),
@@ -437,7 +438,7 @@ class m130524_201442_init extends Migration
             'num_albo_provinciale' => $this->integer(),
             'num_albo_nazionale' => $this->integer(),
             'num_assicurazione' => $this->integer(),
-            'societa_assicurazione' => $this->string(1), // ??? 
+            'societa_assicurazione' => $this->string(1), // ???
             'data_scadenza_assicurazione' => $this->timestamp(),
             'note'=> $this->string(1) // ???
         ]);
@@ -486,12 +487,36 @@ class m130524_201442_init extends Migration
         // escluse isp_ispezione, isp_soggetti_ispezione, con_ispezione_soggetti, isp_tipo_fenomeno, isp_report, richiesta_mezzo_aereo
 
 
-
-
+        $this->createTable(
+            'tbl_audit_trail',
+            [
+                'id' => Schema::TYPE_PK,
+                'old_value' => Schema::TYPE_TEXT,
+                'new_value' => Schema::TYPE_TEXT,
+                'action' => Schema::TYPE_STRING . ' NOT NULL',
+                'model' => Schema::TYPE_STRING . ' NOT NULL',
+                'field' => Schema::TYPE_STRING,
+                'stamp' => Schema::TYPE_DATETIME . ' NOT NULL',
+                'user_id' => Schema::TYPE_STRING,
+                'model_id' => Schema::TYPE_STRING . ' NOT NULL',
+            ]
+        );
+        
+        //Index these bad boys for speedy lookups
+        $this->createIndex('idx_audit_trail_user_id', 'tbl_audit_trail', 'user_id');
+        $this->createIndex('idx_audit_trail_model_id', 'tbl_audit_trail', 'model_id');
+        $this->createIndex('idx_audit_trail_model', 'tbl_audit_trail', 'model');
+        $this->createIndex('idx_audit_trail_field', 'tbl_audit_trail', 'field');
+        /* http://stackoverflow.com/a/1827099/383478
+         $this->createIndex( 'idx_audit_trail_old_value', 'tbl_audit_trail', 'old_value');
+        $this->createIndex( 'idx_audit_trail_new_value', 'tbl_audit_trail', 'new_value');
+        */
+        $this->createIndex('idx_audit_trail_action', 'tbl_audit_trail', 'action');
     }
 
-    public function down()
+    public function safeDown()
     {
+        $this->dropTable('tbl_audit_trail');
         
         $this->dropTable('{{%user}}');
 

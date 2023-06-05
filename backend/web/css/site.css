@@ -970,3 +970,45 @@ path.active {
       @keyframes blinker-two {  
       100% { opacity: 0; }
       }
+
+.simple_select label{
+  display: none;
+}
+.big_number{
+  font-weight: bold;
+  font-size: 46px;
+  text-align: center;
+}
+.main_diff{
+  line-height: 64px;
+  font-size: 32px;
+
+}
+.datepicker-dropdown {
+  z-index: 999999 !important;
+}
+
+.lista-elicotteri-videowall .panel-title{
+  font-size: 44px !important;
+}
+
+.lista-elicotteri-videowall th{
+  font-size: 36px !important;
+}
+.lista-elicotteri-videowall td{
+  font-size: 41px;
+}
+.lista-elicotteri-videowall thead{
+  background-color: #707070;
+  color: #f7f7f7;
+}
+.lista-elicotteri-videowall .panel-default{
+  background-color: #f5f5f5;
+}
+
+.ultra-large-modal .modal-dialog {
+  width: 90% !important;
+}
+#avaible-mezzi-list-container, #avaible-attrezzature-list-container{
+  height: 48vh;
+}

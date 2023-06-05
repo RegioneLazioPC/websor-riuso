@@ -44,4 +44,39 @@ class GeometryFunctions{
         
 	}
 
+    /**
+     * Prendi comune corretto
+     * @param  [type] $lat [description]
+     * @param  [type] $lon [description]
+     * @return [type]      [description]
+     */
+    public static function getComuneByLatLon($lat, $lon) {
+        $connection = Yii::$app->getDb();
+        $command = $connection->createCommand("SELECT *
+            FROM
+            loc_comune_geom
+            WHERE 
+             ST_DWithin(geom, ST_Transform(ST_SetSRID(ST_Point(:lon, :lat),4326), 32632 ), 3)
+             LIMIT 1", [ ':lon' => $lon, ':lat' => $lat ]);
+
+        $result = $command->queryAll();
+
+        return (count($result) > 0) ? $result[0] : false;
+    }
+
+    public static function getCentroid($codistat) {
+        
+        $centroid = Yii::$app->db->createCommand("SELECT
+        ST_X( ST_Centroid( ST_Transform(ST_SetSRID(geom,32632), 4326) )::geometry) as lon,
+        ST_Y( ST_Centroid( ST_Transform(ST_SetSRID(geom,32632), 4326) )::geometry) as lat
+        FROM loc_comune_geom WHERE pro_com = :codistat;", [':codistat'=>(int) $codistat])->queryAll();
+
+        if(count($centroid) < 1) return null;
+        
+        return [
+            'lat'=>$centroid[0]['lat'],
+            'lon'=>$centroid[0]['lon']
+        ];
+    }
+
 }

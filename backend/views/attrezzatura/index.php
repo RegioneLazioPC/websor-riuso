@@ -78,7 +78,7 @@ $cols = array_merge($cols, [
         'attribute' => 'org',
         'format' => 'raw',
         'value' => function($data){
-            return '<span style="max-width: 200px; display: block; white-space: pre-wrap;">'.Html::encode( $data['organizzazione']['denominazione']).'</span>';
+            return '<span style="max-width: 200px; display: block; white-space: pre-wrap;">'.(isset($data['organizzazione']) && isset($data['organizzazione']['denominazione']) ? Html::encode( $data['organizzazione']['denominazione']) : '' ).'</span>';
         }
     ],
     [

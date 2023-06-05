@@ -33,6 +33,10 @@ $this->params['breadcrumbs'][] = $this->title;
             'id',
             'tipologia',
             [
+                'label'=>'Categoria messaggio cap',
+                'attribute'=>'cap_category'
+            ],
+            [
                 'label' => 'Mostra in app',
                 'attribute' =>'idparent',
                 'value' => ($model->check_app && $model->check_app == 1) ?  "Si" : "No"
@@ -42,6 +46,14 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label' => 'Genitore',
                 'attribute' =>'idparent',
                 'value' => ($model->tipologiaGenitore) ?  $model->tipologiaGenitore->tipologia : ""
+            ],
+            [
+                'label' => 'Valida a partire dal',
+                'attribute' =>'valido_dal'
+            ],
+            [
+                'label' => 'Valida fino al',
+                'attribute' =>'valido_al'
             ],
         ],
     ]) ?>

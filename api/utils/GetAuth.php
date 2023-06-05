@@ -75,6 +75,7 @@ class GetAuth extends AuthMethod
     public function authenticate($user, $request, $response)
     {
         $authHeader = $request->getHeaders()->get('Authorization');
+        
         if ($authHeader !== null && preg_match('/^' . $this->schema . '\s+(.*?)$/', $authHeader, $matches)) {
             $token = $this->loadToken($matches[1]);
             if ($token === null) {

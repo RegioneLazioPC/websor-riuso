@@ -19,13 +19,10 @@ class m190520_145825_add_comuni_geom extends Migration
 
         $import = explode(";", $import);
         foreach ($import as $query) {
-            
-            if($query != "") {
+            if ($query != "") {
                 Yii::$app->db->createCommand($query)->execute();
             }
         }
-
-        
     }
 
     /**
@@ -33,7 +30,7 @@ class m190520_145825_add_comuni_geom extends Migration
      */
     public function safeDown()
     {
-        Yii::$app->db->createCommand("DROP TABLE loc_comuni_geom")->execute();
+        Yii::$app->db->createCommand("DROP TABLE loc_comune_geom")->execute();
     }
 
     /*

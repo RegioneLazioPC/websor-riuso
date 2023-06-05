@@ -19,8 +19,7 @@ class m190605_152431_create_view_only_orgs_table extends Migration
                 vt.tipologia
             FROM vol_organizzazione o
                 LEFT JOIN vol_tipo_organizzazione vt ON vt.id = o.id_tipo_organizzazione
-            WHERE (o.stato_iscrizione = 3);"
-        )->execute();
+            WHERE (o.stato_iscrizione = 3);")->execute();
     }
 
     /**
@@ -28,6 +27,6 @@ class m190605_152431_create_view_only_orgs_table extends Migration
      */
     public function safeDown()
     {
-        Yii::$app->db->createCommand("DROP VIEW view_rubrica")->execute();
+        Yii::$app->db->createCommand("DROP VIEW view_organizzazioni_attive")->execute();
     }
 }

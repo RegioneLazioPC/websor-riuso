@@ -35,7 +35,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'data_allerta',
                 'filter'=> DatePicker::widget([
                     'name'  => 'AlmAllertaMeteoSearch[data_allerta]',
-                    'value' => Yii::$app->request->get('AlmAllertaMeteoSearch')['data_allerta'],
+                    'value' => Yii::$app->request->get('AlmAllertaMeteoSearch') && isset(Yii::$app->request->get('AlmAllertaMeteoSearch')['data_allerta']) ? Yii::$app->request->get('AlmAllertaMeteoSearch')['data_allerta'] : null,
                     'pluginOptions' => [
                         'autoclose' => true,
                         'language' => 'it',
@@ -48,8 +48,8 @@ $this->params['breadcrumbs'][] = $this->title;
             [   
                 'label' => 'Note',
                 'attribute' => 'messaggio',
-                'width' => '200px',
-                'contentOptions' => ['style'=>'width: 200px;'],
+                'contentOptions' => ['style'=>'width: 300px;white-space: normal;'],
+                'headerOptions' => ['style'=>'width: 300px;'],
                 'value' => function($model) {
                     return @$model->messages->note;
                 }

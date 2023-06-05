@@ -133,6 +133,10 @@ class VolVolontario extends \yii\db\ActiveRecord
         ];
     }
 
+    public function extraFields() {
+        return ['anagrafica'];
+    }
+
     /**
      * @return \yii\db\ActiveQuery
      */

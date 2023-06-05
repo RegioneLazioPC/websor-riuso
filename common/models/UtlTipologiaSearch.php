@@ -19,6 +19,7 @@ class UtlTipologiaSearch extends UtlTipologia
     {
         return [
             [['id', 'idparent'], 'integer'],
+            [['cap_category'], 'string'],
             [['tipologia', 'icon_name'], 'safe'],
         ];
     }
@@ -54,6 +55,7 @@ class UtlTipologiaSearch extends UtlTipologia
         $query->andFilterWhere([
             'id' => $this->id,
             'idparent' => $this->idparent,
+            'cap_category' => $this->cap_category
         ]);
 
         $query->andFilterWhere(['ilike', 'tipologia', $this->tipologia])

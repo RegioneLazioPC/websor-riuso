@@ -179,16 +179,20 @@ class m180510_131616_add_views extends Migration
      */
     public function safeDown()
     {
-        Yii::$app->db->createCommand("DROP VIEW geo_datas")
+        Yii::$app->db->createCommand("DROP MATERIALIZED VIEW IF EXISTS routing.m_view_organizzazioni")
+            ->execute();
+        
+
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS geo_datas")
             ->execute();
 
-        Yii::$app->db->createCommand("DROP VIEW view_organizzazioni")
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS view_organizzazioni")
             ->execute();
 
-        Yii::$app->db->createCommand("DROP VIEW view_eventi")
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS view_eventi")
             ->execute();
 
-        Yii::$app->db->createCommand("DROP VIEW view_segnalazioni")
+        Yii::$app->db->createCommand("DROP VIEW IF EXISTS view_segnalazioni")
             ->execute();
 
         Yii::$app->db->createCommand("CREATE VIEW geo_datas AS 

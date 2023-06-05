@@ -31,6 +31,7 @@ use common\models\LocIndirizzo;
 use common\models\LocCivico;
 
 use common\models\ConEventoSegnalazioneApp;
+
 /**
  * SegnalazioneController implements the CRUD actions for UtlSegnalazione model.
  */
@@ -51,8 +52,8 @@ class SegnalazioneController extends Controller
             'access' => [
                 'class' => \yii\filters\AccessControl::className(),
                 'denyCallback' => function ($rule, $action) {
-                    if(Yii::$app->user){
-                        Yii::error(json_encode( Yii::$app->authManager->getPermissionsByUser(Yii::$app->user->getId()) ));
+                    if (Yii::$app->user) {
+                        Yii::error(json_encode(Yii::$app->authManager->getPermissionsByUser(Yii::$app->user->getId())));
                         Yii::$app->user->logout();
                     }
                     return $this->redirect(Yii::$app->urlManager->createUrl('site/login'));
@@ -62,6 +63,11 @@ class SegnalazioneController extends Controller
                         'allow' => true,
                         'actions' => ['index', 'lavorate', 'map', 'list-map', 'count'],
                         'permissions' => ['listSegnalazioni']
+                    ],
+                    [
+                        'allow' => true,
+                        'actions' => ['change-evento-associato'],
+                        'permissions' => ['changeSegnalazioneEvento']
                     ],
                     [
                         'allow' => true,
@@ -98,10 +104,11 @@ class SegnalazioneController extends Controller
         ];
     }
 
-    public function actionListMap() {
+    public function actionListMap()
+    {
         \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         return UtlSegnalazione::find()
-                ->with('tipologia','utente.user', 'comune')
+                ->with('tipologia', 'utente.user', 'comune')
                 ->where(['stato'=>'Nuova in lavorazione'])
                 ->orderBy('dataora_segnalazione DESC')
                 ->asArray()
@@ -115,7 +122,7 @@ class SegnalazioneController extends Controller
     public function actionCount()
     {
         \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-        if(!empty(Yii::$app->params['segnalazioni_da_lavorare']) && strtolower( Yii::$app->params['segnalazioni_da_lavorare'] ) == 'app' ) {
+        if (!empty(Yii::$app->params['segnalazioni_da_lavorare']) && strtolower(Yii::$app->params['segnalazioni_da_lavorare']) == 'app') {
             return UtlSegnalazione::find()
             ->select(['id'])
             ->where(['stato'=>'Nuova in lavorazione'])
@@ -139,7 +146,7 @@ class SegnalazioneController extends Controller
 
         $searchModel = new UtlSegnalazioneSearch();
         $params = ['stato'=>['Nuova in lavorazione']];
-        if(Yii::$app->user->can('gestioneIncendio',['tipologia' => '1'])){
+        if (Yii::$app->user->can('gestioneIncendio', ['tipologia' => '1'])) {
             $operatore = null;
             $params = array_merge($params, ["tipologia" => '1']);
         }
@@ -166,7 +173,7 @@ class SegnalazioneController extends Controller
 
         $searchModel = new UtlSegnalazioneSearch();
         $params = ['stato'=>['Verificata e trasformata in evento','Chiusa']];
-        if(Yii::$app->user->can('gestioneIncendio',['tipologia' => '1'])){
+        if (Yii::$app->user->can('gestioneIncendio', ['tipologia' => '1'])) {
             $operatore = null;
             $params = array_merge($params, ["tipologia" => '1']);
         }
@@ -199,24 +206,27 @@ class SegnalazioneController extends Controller
     {
         $model = $this->findModel($id);
 
-        if($model->tipologia) :
-            
 
             $listEventi = UtlEvento::find()
-            ->select( ['*', 'ST_Distance_Sphere(geom, ST_MakePoint(:lon, :lat)) as distance'] )
+            ->select([
+                '*',
+                'ST_Distance_Sphere(geom, ST_MakePoint(:lon, :lat)) as list_distance',
+                (new \yii\db\Expression('CASE
+                     WHEN tipologia_evento = :tipo THEN 1
+                     ELSE 2
+                END as tipo_value', [':tipo' => $model->tipologia_evento ? intval($model->tipologia_evento) : 0]))
+            ])
             ->where('ST_Distance_Sphere(geom, ST_MakePoint(:lon, :lat)) <= :distance')
             ->andWhere(['!=', 'stato', 'Chiuso'])
             ->addParams([
-                ':lat' => floatval($model->lat), 
-                ':lon' => floatval($model->lon), 
-                ':distance' => intval(150000)
+                ':lat' => floatval($model->lat),
+                ':lon' => floatval($model->lon),
+                ':distance' => intval(50000) // 150000
             ])
-            ->orderBy(['distance'=>SORT_ASC])
+            ->orderBy([ 'tipo_value' => SORT_ASC, 'list_distance' => SORT_ASC, 'dataora_evento' => SORT_DESC ])
             ->limit(300)
             ->all();
-        else:
-            $listEventi = [];
-        endif;
+        
         return $this->render('view', [
             'model' => $model,
             'listEventi' => $listEventi
@@ -256,26 +266,29 @@ class SegnalazioneController extends Controller
         $conn = \Yii::$app->db;
         $dbTrans = $conn->beginTransaction();
         try {
+            if (empty($model->tipologia_evento)) {
+                throw new \Exception("Inserisci la tipologia di segnalazione", 1);
+            }
+            
 
             // Creo evento
             $eventoModel = new UtlEvento();
             $eventoModel->setAttributes($data);
             $eventoModel->stato = 'Non gestito';
-            if(!$eventoModel->save(false)){
+            if (!$eventoModel->save(false)) {
                 throw new Exception('Errore salvataggio Evento', 500);
             }
 
             // Salvo gli extra segnalazione/evento
             $extras = $model->extras;
-            if(!empty($extras)){
-
-                foreach ($extras as $extra){
+            if (!empty($extras)) {
+                foreach ($extras as $extra) {
                     $eventoModel->link('extras', $extra);
 
                     $conSegnalazioneExtra = ConSegnalazioneExtra::find()->where(['idsegnalazione' => $model->id, 'idextra' => $extra->id])->one();
                     $conEventoExtra = ConEventoExtra::find()->where(['idevento' => $eventoModel->id, 'idextra' => $extra->id])->one();
                     
-                    if(isset($extra)){
+                    if (isset($extra)) {
                         $dataEvento = $conSegnalazioneExtra->attributes;
                         $conEventoExtra->setAttributes($dataEvento);
                         $conEventoExtra->save();
@@ -288,22 +301,25 @@ class SegnalazioneController extends Controller
             $conEventoSegnalazione->idsegnalazione = $id;
             $conEventoSegnalazione->idevento = $eventoModel->id;
             $conEventoSegnalazione->save();
-            if(!$conEventoSegnalazione->save(false)){
+            if (!$conEventoSegnalazione->save(false)) {
                 throw new Exception('Errore salvataggio Connessione Segnalazione', 500);
             }
 
             // Cambio stato alla segnalazione
             $model->stato = 'Verificata e trasformata in evento';
-            if(!$model->save(false)){
+            if (!$model->save(false)) {
                 throw new Exception('Errore salvataggio stato Segnalazione', 500);
             }
 
-            $dbTrans->commit();
+            \common\models\cap\CapExposedMessage::generateFromEvent($eventoModel, 'Create');
 
-        }catch (Exception $e) {
+            $dbTrans->commit();
+        } catch (Exception $e) {
             $dbTrans->rollBack();
+            Yii::error($e);
             $listEventi = UtlEvento::find()
             ->where(['tipologia_evento' => $model->tipologia->id])->orderBy('dataora_evento DESC')->limit(20)->all();
+            Yii::$app->getSession()->setFlash('error', $e->getMessage());
             return $this->render('view', [
                 'model' => $this->findModel($id),
                 'listEventi' => $listEventi
@@ -325,30 +341,29 @@ class SegnalazioneController extends Controller
         $conn = \Yii::$app->db;
         $dbTrans = $conn->beginTransaction();
         try {
-
             // Creo connessione con Segnalazione
             $conEventoSegnalazione = new ConEventoSegnalazione();
             $conEventoSegnalazione->idsegnalazione = $id;
             $conEventoSegnalazione->idevento = $idEvento;
             $conEventoSegnalazione->save();
-            if(!$conEventoSegnalazione->save(false)){
+            if (!$conEventoSegnalazione->save(false)) {
                 throw new Exception('Errore salvataggio Connessione Segnalazione', 500);
             }
 
             // Cambio stato alla segnalazione
             $model->stato = 'Verificata e trasformata in evento';
-            if(!$model->save(false)){
+            if (!$model->save(false)) {
                 throw new Exception('Errore salvataggio stato Segnalazione', 500);
             }
 
+            \common\models\cap\CapExposedMessage::generateFromEvent(UtlEvento::findOne($idEvento), 'Segnalazione attach evento');
+
             $dbTrans->commit();
-
-        }catch (Exception $e) {
+        } catch (Exception $e) {
             $dbTrans->rollBack();
-
-            return $this->render('view', [
-                'model' => $this->findModel($id),
-            ]);
+            Yii::error($e);
+            Yii::$app->getSession()->setFlash('error', $e->getMessage());
+            return $this->redirect(['segnalazione/view?id='.$id]);
         }
 
         return $this->redirect(['evento/view?id='.$idEvento]);
@@ -361,13 +376,13 @@ class SegnalazioneController extends Controller
         $conn = \Yii::$app->db;
         $dbTrans = $conn->beginTransaction();
         try {
-
-
             $connection = $model->segnalazioneAppEvento;
-            if(empty($connection)) throw new \Exception("Connessione non trovata", 404);
+            if (empty($connection)) {
+                throw new \Exception("Connessione non trovata", 404);
+            }
 
             $connection->confirmed = 1;
-            if(!$connection->save()){
+            if (!$connection->save()) {
                 throw new Exception('Errore salvataggio Connessione Segnalazione', 500);
             }
 
@@ -376,21 +391,20 @@ class SegnalazioneController extends Controller
             $conEventoSegnalazione->idsegnalazione = $id;
             $conEventoSegnalazione->idevento = $connection->id_evento;
             $conEventoSegnalazione->save();
-            if(!$conEventoSegnalazione->save(false)){
+            if (!$conEventoSegnalazione->save(false)) {
                 throw new Exception('Errore salvataggio Connessione Segnalazione', 500);
             }
 
             // Cambio stato alla segnalazione
             $model->stato = 'Verificata e trasformata in evento';
-            if(!$model->save(false)){
+            if (!$model->save(false)) {
                 throw new Exception('Errore salvataggio stato Segnalazione', 500);
             }
 
             $dbTrans->commit();
-
-        }catch (Exception $e) {
+        } catch (Exception $e) {
             $dbTrans->rollBack();
-
+            Yii::$app->getSession()->setFlash('error', $e->getMessage());
             return $this->render('view', [
                 'model' => $this->findModel($id),
             ]);
@@ -406,20 +420,20 @@ class SegnalazioneController extends Controller
         $conn = \Yii::$app->db;
         $dbTrans = $conn->beginTransaction();
         try {
-
             $connection = $model->segnalazioneAppEvento;
-            if(empty($connection)) throw new \Exception("Connessione non trovata", 404);
+            if (empty($connection)) {
+                throw new \Exception("Connessione non trovata", 404);
+            }
 
             $connection->confirmed = 2;
-            if(!$connection->save()){
+            if (!$connection->save()) {
                 throw new Exception('Errore salvataggio Connessione Segnalazione', 500);
             }
 
             $dbTrans->commit();
-
-        }catch (Exception $e) {
+        } catch (Exception $e) {
             $dbTrans->rollBack();
-
+            Yii::$app->getSession()->setFlash('error', $e->getMessage());
             return $this->render('view', [
                 'model' => $this->findModel($id),
             ]);
@@ -436,28 +450,33 @@ class SegnalazioneController extends Controller
     public function actionCreate()
     {
         $model = new UtlSegnalazione();
+        if (Yii::$app->request->get('from_cap')) {
+            $model->loadDataFromCapMessage(Yii::$app->request->get('from_cap'));
+        }
+
         $utente = new UtlUtente();
         $utente->scenario = 'createSegnalatore';
 
         //Variabile che mostra/nasconde i campi lat e lon nel form in caso di problemi di geolocalizzazione
         $showLatLon = false;
 
-        if ($model->load( Yii::$app->request->post() )) {
-            
+        if ($model->load(Yii::$app->request->post())) {
             $model->stato = 'Nuova in lavorazione';
             $conn = \Yii::$app->db;
             $dbTrans = $conn->beginTransaction();
             
             try {
-
                 $params = Yii::$app->request->post('UtlSegnalazione');
                 
-                if( empty( $model->idcomune ) ) throw new Exception("Seleziona il comune");
-                if( empty($model->lat) || empty($model->lon) ) throw new Exception("Inserisci le coordinate selezionando un indirizzo/toponimo o manualmente");
+                if (empty($model->idcomune)) {
+                    throw new Exception("Seleziona il comune");
+                }
+                if (empty($model->lat) || empty($model->lon)) {
+                    throw new Exception("Inserisci le coordinate selezionando un indirizzo/toponimo o manualmente");
+                }
 
                 $tel_params = Yii::$app->request->post('UtlSegnalazione');
-                if( empty($tel_params['telefono_segnalatore']) )  
-                {
+                if (empty($tel_params['telefono_segnalatore'])) {
                     throw new Exception("Inserisci il numero di telefono");
                 }
 
@@ -469,93 +488,101 @@ class SegnalazioneController extends Controller
                     $anagrafica->cognome = @Yii::$app->request->post('UtlSegnalazione')['cognome_segnalatore'];
                     $anagrafica->telefono = @Yii::$app->request->post('UtlSegnalazione')['telefono_segnalatore'];
                     $anagrafica->email = @Yii::$app->request->post('UtlSegnalazione')['email_segnalatore'];
-                
+
                 $anagrafica = $anagrafica->createOrUpdate();
                 if($anagrafica->getErrors()) :
                     throw new Exception('Errore salvataggio dati Segnalatore. Controllare i dati', 500);
                 endif;
                 */
-                //$utente->load(Yii::$app->request->post());
+                $utente->load(Yii::$app->request->post());
                 //$utente->id_anagrafica = $anagrafica->id;
                 // Salvataggio utente
-                //if( !$utente->save(false) ){
-                //    throw new Exception('Errore salvataggio Segnalatore. Controllare i dati', 500);
-                //}
+                if (!$utente->save(false)) {
+                    throw new Exception('Errore salvataggio Segnalatore. Controllare i dati', 500);
+                }
 
                 // Aggiorno idutente e salvo il model
-                //$model->idutente = $utente->getPrimaryKey();
+                $model->idutente = $utente->getPrimaryKey();
 
                 $segnalazione_address = Yii::$app->request->post('UtlSegnalazione')['address_type'];
                 $post_segnalazione = Yii::$app->request->post('UtlSegnalazione');
 
-                if( !\common\utils\GeometryFunctions::verifyLatLonInComune( $model->lat, $model->lon, $model->idcomune )) throw new Exception("Le coordinate inserite non rientrano nella geometria del comune selezionato");     
+                if (!\common\utils\GeometryFunctions::verifyLatLonInComune($model->lat, $model->lon, $model->idcomune)) {
+                    throw new Exception("Le coordinate inserite non rientrano nella geometria del comune selezionato");
+                }
 
-                switch($segnalazione_address) {
+                switch ($segnalazione_address) {
                     case 1:
-
-                        if(empty($model->address) || empty($model->civico)) throw new \Exception("Inserisci indirizzo e seleziona il numero civico", 1);
+                        if (empty($model->address) || empty($model->civico)) {
+                            throw new \Exception("Inserisci indirizzo e seleziona il numero civico", 1);
+                        }
                         // il cap è semi-virtuale, serve solo come check a posteriori per vedere se ha preso correttamente l'indirizzo
-                        if(empty($model->cap)) throw new \Exception("L'indirizzo selezionato non è stato preso, riprova", 1);   
+                        if (empty($model->cap)) {
+                            throw new \Exception("L'indirizzo selezionato non è stato preso, riprova", 1);
+                        }
                         
                         $model->luogo = '';
                         $model->indirizzo = $model->address . ' ' . $model->civico . ' ' . $model->cap;
 
-                    break;
+                        break;
                     case 2:
-                        
-                        if( empty($model->google_address) ) throw new Exception("Inserisci e seleziona l'indirizzo con l'autocomplete di google", 1);
+                        if (empty($model->google_address)) {
+                            throw new Exception("Inserisci e seleziona l'indirizzo con l'autocomplete di google", 1);
+                        }
                         
                         $model->indirizzo = '';
                         $model->luogo = $model->google_address;
                         
-                    break;
+                        break;
                     case 3:
-                        
-                        if( empty($model->manual_address) ) throw new Exception("Inserisci l'indirizzo", 1);                        
+                        if (empty($model->manual_address)) {
+                            throw new Exception("Inserisci l'indirizzo", 1);
+                        }
 
                         $model->luogo = '';
                         $model->indirizzo = $model->manual_address;
                         
-                    break;
+                        break;
                     case 4:
-
-                        if( empty( $model->toponimo_address ) ) throw new Exception("Seleziona il toponimo dalla tendina", 1);
+                        if (empty($model->toponimo_address)) {
+                            throw new Exception("Seleziona il toponimo dalla tendina", 1);
+                        }
                         
                         $model->luogo = $model->toponimo_address;
                         $model->indirizzo = '';
 
-                    break;
+                        break;
                 }
                 
                 
                 // Salvo idsalaoperativa prendendelo dall'operatore che effettua la segnalazione
                 $operatore = UtlOperatorePc::find()->where(['iduser' => Yii::$app->user->id])->one();
 
-                if(isset($operatore)){
+                if (isset($operatore)) {
                     $model->idsalaoperativa = $operatore->idsalaoperativa;
                 }
 
                 
                 // Salvo il model segnalazione
                 
-                if(!$model->save()){
+                if (!$model->save()) {
+                    Yii::error($model->getErrors());
                     throw new Exception('Errore salvataggio Segnalazione. Controllare i dati', 500);
                 }
                 
                 
-                if(!empty(Yii::$app->request->post('UtlSegnalazione')['extras'])){
-
+                if (!empty(Yii::$app->request->post('UtlSegnalazione')['extras'])) {
                     $extras = Yii::$app->request->post('UtlSegnalazione')['extras'];
                     $extrasInfoArray = !empty(Yii::$app->request->post('UtlSegnalazioneExtraInfo')) ? Yii::$app->request->post('UtlSegnalazioneExtraInfo') : null;
                     $mdExtras = UtlExtraSegnalazione::find()->where(['id' => $extras])->all();
 
-                    foreach ($mdExtras as $extra){
+                    foreach ($mdExtras as $extra) {
                         $model->link('extras', $extra);
 
                         $extraInfo = ConSegnalazioneExtra::find()->where(['idsegnalazione' => $model->id, 'idextra' => $extra->id])->one();
 
                         $data = [];
-                        if(isset($extrasInfoArray[$extra->id])){
+                        if (isset($extrasInfoArray[$extra->id])) {
                             $data['ConSegnalazioneExtra'] = $extrasInfoArray[$extra->id];
                             $extraInfo->load($data);
                             $extraInfo->save();
@@ -567,16 +594,12 @@ class SegnalazioneController extends Controller
                 // get the uploaded file instance. for multiple file uploads
                 $attachFile = UploadedFile::getInstance($model, 'attachment');
 
-                if(!empty($attachFile)) {
-
-                    $this->attachSegnalazioneAllegato( $attachFile, $model );
-
-                    
+                if (!empty($attachFile)) {
+                    $this->attachSegnalazioneAllegato($attachFile, $model);
                 }
 
 
                 $dbTrans->commit();
-
             } catch (Exception $e) {
                 $dbTrans->rollBack();
                 Yii::$app->getSession()->setFlash('error', $e->getMessage());
@@ -609,105 +632,119 @@ class SegnalazioneController extends Controller
         $model = $this->findModel($id);
         $utente = UtlUtente::findOne($model->idutente);
         $utente->scenario = 'createSegnalatore';
-        $anagrafica = $utente->getAnagrafica()->one();
+        //$utente = UtlUtente::findOne($model->idutente);
+        //$utente->scenario = 'createSegnalatore';
+        //$anagrafica = $utente->getAnagrafica()->one();
 
         //Variabile che mostra/nasconde i campi lat e lon nel form in caso di problemi di geolocalizzazione
         $showLatLon = false;
 
         if ($model->load(Yii::$app->request->post())) {
-
             $conn = \Yii::$app->db;
             $dbTrans = $conn->beginTransaction();
             try {
-
                 $params = Yii::$app->request->post('UtlSegnalazione');
                 
 
-                if( empty( $model->idcomune ) ) throw new Exception("Seleziona il comune");
-                if( empty($model->lat) || empty($model->lon) ) throw new Exception("Inserisci le coordinate selezionando un indirizzo/toponimo o manualmente");
+                if (empty($model->idcomune)) {
+                    throw new Exception("Seleziona il comune");
+                }
+                if (empty($model->lat) || empty($model->lon)) {
+                    throw new Exception("Inserisci le coordinate selezionando un indirizzo/toponimo o manualmente");
+                }
 
-                if( empty($model->telefono_segnalatore) )  
-                {
+                if (empty($model->telefono_segnalatore)) {
                     throw new Exception("Inserisci il numero di telefono");
                 }
 
                 
-                if(!$utente->load(Yii::$app->request->post()) || !$utente->save(false)) {
+                if (!$utente->load(Yii::$app->request->post()) || !$utente->save(false)) {
                     throw new Exception('Errore salvataggio Segnalatore. Controllare i dati', 500);
                 }
 
                 $ana_params = Yii::$app->request->post('UtlAnagrafica');
                 
-                $ana_params['nome'] = @Yii::$app->request->post('UtlSegnalazione')['nome_segnalatore'];
-                $ana_params['cognome'] = @Yii::$app->request->post('UtlSegnalazione')['cognome_segnalatore'];
+                //$ana_params['nome'] = @Yii::$app->request->post('UtlSegnalazione')['nome_segnalatore'];
+                //$ana_params['cognome'] = @Yii::$app->request->post('UtlSegnalazione')['cognome_segnalatore'];
                 
-                if($model->fonte != 'App') {
-                    if(@Yii::$app->request->post('UtlSegnalazione')['telefono_segnalatore']) $ana_params['telefono'] = Yii::$app->request->post('UtlSegnalazione')['telefono_segnalatore'];
-                    if(@Yii::$app->request->post('UtlSegnalazione')['email_segnalatore']) $ana_params['email'] = Yii::$app->request->post('UtlSegnalazione')['email_segnalatore'];
-                    
+                if ($model->fonte != 'App') {
+                    if (@Yii::$app->request->post('UtlSegnalazione')['telefono_segnalatore']) {
+                        $ana_params['telefono'] = Yii::$app->request->post('UtlSegnalazione')['telefono_segnalatore'];
+                    }
+                    if (@Yii::$app->request->post('UtlSegnalazione')['email_segnalatore']) {
+                        $ana_params['email'] = Yii::$app->request->post('UtlSegnalazione')['email_segnalatore'];
+                    }
                 }
 
-                if(!$anagrafica->load(['UtlAnagrafica'=>$ana_params]) || !$anagrafica->save(false)){
-                    throw new Exception('Errore salvataggio dati anagrafici. Controllare i dati', 500);
-                }
+                //if(!$anagrafica->load(['UtlAnagrafica'=>$ana_params]) || !$anagrafica->save(false)){
+                    //throw new Exception('Errore salvataggio dati anagrafici. Controllare i dati', 500);
+                //}
 
 
                 $segnalazione_address = Yii::$app->request->post('UtlSegnalazione')['address_type'];
                 $post_segnalazione = Yii::$app->request->post('UtlSegnalazione');
 
-                if( !\common\utils\GeometryFunctions::verifyLatLonInComune( $model->lat, $model->lon, $model->idcomune )) throw new Exception("Le coordinate inserite non rientrano nella geometria del comune selezionato");         
+                if (!\common\utils\GeometryFunctions::verifyLatLonInComune($model->lat, $model->lon, $model->idcomune)) {
+                    throw new Exception("Le coordinate inserite non rientrano nella geometria del comune selezionato");
+                }
                 
-                switch($segnalazione_address) {
+                switch ($segnalazione_address) {
                     case 1:
-
-                        if(empty($model->address) || empty($model->civico)) throw new \Exception("Inserisci indirizzo e seleziona il numero civico", 1);
+                        if (empty($model->address) || empty($model->civico)) {
+                            throw new \Exception("Inserisci indirizzo e seleziona il numero civico", 1);
+                        }
                         // il cap è semi-virtuale, serve solo come check a posteriori per vedere se ha preso correttamente l'indirizzo
-                        if(empty($model->cap)) throw new \Exception("L'indirizzo selezionato non è stato preso, riprova", 1);   
+                        if (empty($model->cap)) {
+                            throw new \Exception("L'indirizzo selezionato non è stato preso, riprova", 1);
+                        }
                         
                         $model->luogo = '';
                         $model->indirizzo = $model->address . ' ' . $model->civico . ' ' . $model->cap;
 
-                    break;
+                        break;
                     case 2:
-                        
-                        if( empty($model->google_address) ) throw new Exception("Inserisci e seleziona l'indirizzo con l'autocomplete di google", 1);
+                        if (empty($model->google_address)) {
+                            throw new Exception("Inserisci e seleziona l'indirizzo con l'autocomplete di google", 1);
+                        }
                         
                         $model->indirizzo = '';
                         $model->luogo = $model->google_address;
                         
-                    break;
+                        break;
                     case 3:
-                        
-                        if( empty($model->manual_address) ) throw new Exception("Inserisci l'indirizzo", 1);                        
+                        if (empty($model->manual_address)) {
+                            throw new Exception("Inserisci l'indirizzo", 1);
+                        }
 
                         $model->luogo = '';
                         $model->indirizzo = $model->manual_address;
                         
-                    break;
+                        break;
                     case 4:
-
-                        if( empty( $model->toponimo_address ) ) throw new Exception("Seleziona il toponimo dalla tendina", 1);
+                        if (empty($model->toponimo_address)) {
+                            throw new Exception("Seleziona il toponimo dalla tendina", 1);
+                        }
                         
                         $model->luogo = $model->toponimo_address;
                         $model->indirizzo = '';
 
-                    break;
+                        break;
                 }
 
                 
                 // Model Save
-                if(!$model->save()){
+                if (!$model->save()) {
                     throw new Exception('Errore salvataggio Segnalazione. Controllare i dati', 500);
                 }
 
                 // Aggiorno gli extra
                 ConSegnalazioneExtra::deleteAll(['idsegnalazione' => $model->id]);
-                if(!empty(Yii::$app->request->post('UtlSegnalazione')['extras'])){
+                if (!empty(Yii::$app->request->post('UtlSegnalazione')['extras'])) {
                     $extras = Yii::$app->request->post('UtlSegnalazione')['extras'];
                 }
                 $extrasInfoArray = Yii::$app->request->post('UtlSegnalazioneExtraInfo');
                 
-                if(!empty($extras)) {
+                if (!empty($extras)) {
                     $mdExtras = UtlExtraSegnalazione::find()->where(['id' => $extras])->all();
                     foreach ($mdExtras as $extra) {
                         $model->link('extras', $extra);
@@ -726,15 +763,12 @@ class SegnalazioneController extends Controller
                 // get the uploaded file instance. for multiple file uploads
                 $attachFile = UploadedFile::getInstance($model, 'attachment');
 
-                if(!empty($attachFile)){
-
-                    $this->attachSegnalazioneAllegato( $attachFile, $model );
-                    
+                if (!empty($attachFile)) {
+                    $this->attachSegnalazioneAllegato($attachFile, $model);
                 }
 
 
                 $dbTrans->commit();
-
             } catch (Exception $e) {
                 $dbTrans->rollBack();
                 Yii::$app->getSession()->setFlash('error', $e->getMessage());
@@ -770,6 +804,47 @@ class SegnalazioneController extends Controller
     }
 
     /**
+     * Associa la segnalazione a un altro evento in seguito a un errore
+     * @param  [type] $id_segnalazione [description]
+     * @param  [type] $id_nuovo_evento [description]
+     * @return [type]                  [description]
+     */
+    public function actionChangeEventoAssociato($id_segnalazione, $id_nuovo_evento)
+    {
+
+        $trans = Yii::$app->db->beginTransaction();
+
+        try {
+            $connection = ConEventoSegnalazione::find()->where(['idsegnalazione'=>$id_segnalazione])->all();
+            if (count($connection) != 1) {
+                throw new \Exception("La segnalazione non è associata a un singolo evento, verifica la connessione in con_evento_segnalazione where idsegnalazione = " . $id_segnalazione, 1);
+            }
+            
+            // uso la prima, ho verificato
+            $connection = $connection[0];
+
+            \common\models\cap\CapExposedMessage::generateFromEvent(UtlEvento::findOne($connection->idevento), 'Segnalazione detach evento');
+
+            $connection->idevento = $id_nuovo_evento;
+            if (!$connection->save()) {
+                Yii::error('Errori in modifica con_evento_segnalazione: ' . json_encode($connection->getErrors()));
+                throw new \Exception("Errore in salvataggio nel db, contatta l'assistenza per la verifica dei log", 1);
+            }
+
+            \common\models\cap\CapExposedMessage::generateFromEvent(UtlEvento::findOne($id_nuovo_evento), 'Segnalazione attach evento');
+
+            $trans->commit();
+
+            return $this->redirect(['evento/view', 'id' => $id_nuovo_evento]);
+        } catch (\Exception $e) {
+            $trans->rollBack();
+
+            Yii::$app->getSession()->setFlash('error', $e->getMessage());
+            return $this->redirect(['view', 'id' => $id_segnalazione]);
+        }
+    }
+
+    /**
      * Finds the UtlSegnalazione model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.
      * @param integer $id
@@ -791,21 +866,21 @@ class SegnalazioneController extends Controller
      * @param  [type] $segnalazione [description]
      * @return [type]               [description]
      */
-    protected function attachSegnalazioneAllegato( $file, $segnalazione ) {
+    protected function attachSegnalazioneAllegato($file, $segnalazione)
+    {
         $tipo = UplTipoMedia::find()->where(['descrizione'=>'Allegato segnalazione'])->one();
-        if( empty($tipo) ) {
+        if (empty($tipo)) {
             $tipo = new UplTipoMedia;
             $tipo->descrizione = 'Allegato segnalazione';
             $tipo->save();
         }
 
-        $valid_files = ['application/pdf'];
+        $valid_files = ['application/pdf','image/jpeg','image/jpg','image/gif','image/png'];
         
         $media = new UplMedia;
-        $media->uploadFile($file, $tipo->id, $valid_files, "File non valido, inserisci un pdf");
+        $media->uploadFile($file, $tipo->id, $valid_files, "File non valido, inserisci un pdf, jpeg, png o gif");
         $media->refresh();
 
         $segnalazione->link('media', $media);
-
     }
 }

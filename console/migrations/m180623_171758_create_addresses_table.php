@@ -22,8 +22,8 @@ class m180623_171758_create_addresses_table extends Migration
             'id' => $this->primaryKey(),
             'civico' => $this->string(),
             'id_indirizzo' => $this->integer(),
-            'lat' => $this->double(11,5),
-            'lon' => $this->double(11,5)
+            'lat' => $this->double(11, 5),
+            'lon' => $this->double(11, 5)
         ]);
 
         $this->addForeignKey(
@@ -50,6 +50,16 @@ class m180623_171758_create_addresses_table extends Migration
      */
     public function safeDown()
     {
+        $this->dropForeignKey(
+            'fk-loc_indirizzo_comune',
+            'loc_indirizzo'
+        );
+
+        $this->dropForeignKey(
+            'fk-loc_civico_indirizzo',
+            'loc_civico'
+        );
+
         $this->dropTable('loc_indirizzo');
         $this->dropTable('loc_civico');
     }

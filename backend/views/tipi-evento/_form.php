@@ -6,6 +6,7 @@ use yii\widgets\ActiveForm;
 use kartik\widgets\Select2;
 use yii\helpers\ArrayHelper;
 use common\models\UtlTipologia;
+use kartik\widgets\DatePicker;
 /* @var $this yii\web\View */
 /* @var $model common\models\UtlTipologia */
 /* @var $form yii\widgets\ActiveForm */
@@ -28,6 +29,14 @@ use common\models\UtlTipologia;
         ],
     ]);
 
+    echo $form->field($model, 'cap_category')            
+         ->widget(Select2::classname(), [
+        'data' => \common\models\cap\CapExposedMessage::getDropdownCategories(),
+        'options' => ['placeholder' => 'Scegli categoria messaggio cap ...'],
+        'pluginOptions' => [
+            'allowClear' => false
+        ],
+    ])->label('Categoria messaggio cap');
     ?>
     <?php 
     if(empty($model->idparent)) {
@@ -46,7 +55,34 @@ use common\models\UtlTipologia;
                 }
             ] )->label('Mostra in app');
     }
+
+
     ?>
+
+    <?php  
+        
+        echo $form->field($model, 'valido_dal', ['options' => ['class' => '']])->widget(DatePicker::classname(), [
+                'options' => ['placeholder' => 'Data immatricolazione ...'],
+                'pluginOptions' => [
+                    'autoclose' => true,
+                    'language' => 'it',
+                    'format' => 'yyyy-mm-dd'
+                ],
+            ])->label('Valida a partire dal'); 
+        ?>
+
+    <?php  
+        
+        echo $form->field($model, 'valido_al', ['options' => ['class' => '']])->widget(DatePicker::classname(), [
+                'options' => ['placeholder' => 'Data immatricolazione ...'],
+                'pluginOptions' => [
+                    'autoclose' => true,
+                    'language' => 'it',
+                    'format' => 'yyyy-mm-dd'
+                ],
+            ])->label('Valida fino al'); 
+        ?>
+
     <div class="form-group">
         <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
     </div>

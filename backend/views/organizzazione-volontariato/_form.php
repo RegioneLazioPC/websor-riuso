@@ -29,7 +29,7 @@ $now = new \DateTime();
             if(empty($model->id_sync)) {
 
                 echo $form->field($model, 'id_tipo_organizzazione', ['options' => ['class'=>'']])->widget(Select2::classname(), [
-                    'data' => ArrayHelper::map( VolTipoOrganizzazione::find()->all(), 'id', 'tipologia'),
+                    'data' => ArrayHelper::map( VolTipoOrganizzazione::find()->orderBy(['tipologia'=>SORT_ASC])->all(), 'id', 'tipologia'),
                     'options' => [
                         'placeholder' => 'Tipo organizzazione...',
                         'ng-model' => 'ctrl.tipo_organizzazione',

@@ -5,6 +5,8 @@ namespace common\models;
 use Yii;
 
 use common\models\MasSingleSend;
+use common\models\MasV2Feedback;
+
 /**
  * This is the model class for table "con_mas_invio_contact".
  *
@@ -21,6 +23,10 @@ use common\models\MasSingleSend;
  */
 class ConMasInvioContact extends \yii\db\ActiveRecord
 {
+    public $recapito; 
+    public $uid;
+    public $_channel;
+
     /**
      * @inheritdoc
      */
@@ -113,6 +119,15 @@ class ConMasInvioContact extends \yii\db\ActiveRecord
         return $this->hasMany(MasSingleSend::className(), [
             'id_rubrica_contatto' => 'id_rubrica_contatto',
             'tipo_rubrica_contatto' => 'tipo_rubrica_contatto',
+            'id_invio' => 'id_invio'
+        ]);
+    }
+
+    public function getMasV2SingleSends()
+    {
+        return $this->hasMany(MasV2Feedback::className(), [
+            'recapito' => 'valore_rubrica_contatto',
+            //'channel' => 'channel', // senza channel per retrocompatibilità 19/11/2021
             'id_invio' => 'id_invio'
         ]);
     }

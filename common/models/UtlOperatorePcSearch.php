@@ -12,7 +12,7 @@ use common\models\UtlOperatorePc;
  */
 class UtlOperatorePcSearch extends UtlOperatorePc
 {
-    public $sessionOperatore, $nome, $cognome, $matricola;
+    public $sessionOperatore, $nome, $cognome, $matricola, $status;
 
     
     /**
@@ -22,7 +22,7 @@ class UtlOperatorePcSearch extends UtlOperatorePc
     {
         return [
             [['id', 'idsalaoperativa', 'iduser'], 'integer'],
-            [['nome', 'cognome', 'email', 'matricola', 'ruolo', 'sessionOperatore', 'nome', 'cognome', 'matricola'], 'safe'],
+            [['nome', 'cognome', 'email', 'matricola', 'ruolo', 'sessionOperatore', 'nome', 'cognome', 'matricola', 'status'], 'safe'],
         ];
     }
 
@@ -42,7 +42,7 @@ class UtlOperatorePcSearch extends UtlOperatorePc
     public function search($params)
     {
         
-        $query = UtlOperatorePc::find()->joinWith(['sessionOperatore', 'anagrafica']);
+        $query = UtlOperatorePc::find()->joinWith(['sessionOperatore', 'anagrafica', 'user']);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -80,6 +80,11 @@ class UtlOperatorePcSearch extends UtlOperatorePc
         ]);
 
         if(!empty($this->nome)) $query->andFilterWhere(['ilike', 'utl_anagrafica.nome', $this->nome]);
+
+        if(!empty($this->status)) {
+            if($this->status == -1) $this->status = 0;
+            $query->andFilterWhere(['=', 'user.status', $this->status]);
+        }
 
         if(!empty($this->cognome)) $query->andFilterWhere(['ilike', 'utl_anagrafica.cognome', $this->cognome]);
 

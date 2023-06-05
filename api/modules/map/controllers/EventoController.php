@@ -18,11 +18,9 @@ use yii\rest\ActiveController;
 
 use common\models\UtlEvento;
 use api\utils\ResponseError;
-
+use common\models\ConOperatoreTask;
 /**
  * Evento Controller
- *
- * 
  */
 class EventoController extends ActiveController
 {
@@ -104,10 +102,21 @@ class EventoController extends ActiveController
         $evento = UtlEvento::findOne($id);
         if(!$evento) ResponseError::returnSingleError(404, "Evento non trovato");
 
+        $diarioEvento = new ConOperatoreTask();
+        //$diarioEvento->idfunzione_supporto = 1; //DATI CABLATI NEL DB
+        $diarioEvento->idtask = 13; //DATI CABLATI NEL DB
+        $diarioEvento->idevento = $evento->id;
+        $diarioEvento->note = "Modifica posizione evento da " . $evento->lat . " - " . $evento->lon . " a " . Yii::$app->request->post('lat') . " - " . Yii::$app->request->post('lon');
+        $diarioEvento->idoperatore = Yii::$app->user->identity->operatore->id;
+
+        if(!($diarioEvento->save())) ResponseError::returnMultipleErrors(422, $diarioEvento->getErrors());
+
         $evento->lat = Yii::$app->request->post('lat');
         $evento->lon = Yii::$app->request->post('lon');
         $evento->is_public = (!$evento->is_public) ? 0 : $evento->is_public;
         if(!$evento->save()) ResponseError::returnMultipleErrors(422, $evento->getErrors());
+
+        \common\models\cap\CapExposedMessage::generateFromEvent($evento, 'Change position');
 
         return $evento;
     }

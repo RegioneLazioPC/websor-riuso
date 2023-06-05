@@ -153,8 +153,7 @@ class m181206_141012_create_rubrica_view extends Migration
             LEFT JOIN vol_sede on vol_sede.id = vol_volontario.id_sede
             LEFT JOIN loc_comune on loc_comune.id = vol_sede.comune
             LEFT JOIN loc_provincia on loc_provincia.id = loc_comune.id_provincia
-            WHERE utl_utente.device_token is not null;"
-        );
+            WHERE utl_utente.device_token is not null;");
     }
 
     /**
@@ -162,7 +161,7 @@ class m181206_141012_create_rubrica_view extends Migration
      */
     public function safeDown()
     {
-        Yii::$app->db->createCommand("DROP VIEW view_rubrica");
+        Yii::$app->db->createCommand("DROP VIEW view_rubrica")->execute();
     }
 
     /*
